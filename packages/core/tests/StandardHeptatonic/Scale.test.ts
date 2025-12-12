@@ -62,6 +62,17 @@ test('equality', () => {
 });
 
 test('getExactDegree', () => {
-    expect(Scales.major(PC.c).getExactDegree(P.parse('ef')!)).toBeNull();
+    expect(Scales.major(PC.c).getExactDegree(P.parse('es')!)).toBeNull();
+    expect(Scales.major(PC.c).getExactDegree(P.parse('es')!, { allowEnharmonic: true })!.toString()).toBe('iv');
     expect(Scales.harmonicMinor(PC.c).getExactDegree(P.parse('ef')!)!.toString()).toBe('iii');
+});
+
+test('rotate', () => {
+    expect(Scales.C.major.rotate(2, { moveRoot: false }).equals(Scales.phrygian(PC.c))).toBe(true);
+    expect(Scales.C.major.rotate(2, { moveRoot: true }).equals(Scales.phrygian(PC.e))).toBe(true);
+});
+
+test('transpose', () => {
+    expect(Scales.C.major.transpose(I.parse('m3')!).equals(Scales.major(P.parse('ef')!))).toBe(true);
+    expect(Scales.C.major.transpose(I.parse('-m2')!).equals(Scales.major(PC.b))).toBe(true);
 });
