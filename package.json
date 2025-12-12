@@ -1,0 +1,23 @@
+{
+  "name": "passacaglia-ts",
+  "private": true,
+  "type": "module",
+  "description": "Monorepo for `passacaglia`, an experimental procedural music engine",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "AGPL-3.0-only",
+  "packageManager": "pnpm@10.15.0",
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.15",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.39.1",
+    "tsdown": "^0.17.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.15"
+  }
+}
