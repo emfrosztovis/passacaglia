@@ -8,6 +8,8 @@ import { Accidental } from "./Accidental";
  * A pitch in the standard heptatonic system. The `period` corresponds to the octave number in scientific notation.
  */
 export class _Pitch extends ET12Pitch<StandardHeptatonicSystem> {
+    // static readonly system = _System;
+
     constructor(deg: number, acci: AsRational = 0, period: number = 0) {
         super(_System, deg, acci, period);
     }
@@ -56,6 +58,12 @@ export class _Pitch extends ET12Pitch<StandardHeptatonicSystem> {
         return new _Interval(Math.abs(steps), distance.abs(), sign);
     }
 
+    absoluteIntervalTo(b: _Pitch): _Interval {
+        const a = this.withPeriod(0);
+        b = b.withPeriod(0);
+        return a.intervalTo(b).abs();
+    }
+
     /**
      * Normalize the pitch so that it uses at most double accidentals (i.e. `acci.abs()` < 2)
      */
@@ -85,3 +93,5 @@ export class _Pitch extends ET12Pitch<StandardHeptatonicSystem> {
         return new _Pitch(deg, acci, this.period + deltaPeriod);
     }
 }
+
+// _Pitch satisfies PitchConstructor<StandardHeptatonicSystem, _Pitch>;

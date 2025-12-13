@@ -3,8 +3,10 @@ import { PitchSystem } from "./PitchSystem";
 import { Interval } from "./Interval";
 import { modulo } from "./Utils";
 
-export type PitchConstructor<S extends PitchSystem, P extends Pitch<S> = Pitch<S>>
-    = new (deg: number, acci: AsRational, period?: number) => P;
+export type PitchConstructor<S extends PitchSystem, P extends Pitch<S> = Pitch<S>> = {
+    new (deg: number, acci: AsRational, period?: number): P;
+    readonly system: S;
+}
 
 /**
  * Represents a musical pitch in a scale system: a 3-tuple (degree_index, accidental, period_index). It can also represent a pitch class in some contexts, where the period number is ignored.
@@ -61,6 +63,10 @@ export abstract class Pitch<S extends PitchSystem> {
 
     withPeriod(p: number): this {
         return this._create(this.index, this.acci, p);
+    }
+
+    addPeriod(p: number): this {
+        return this._create(this.index, this.acci, this.period + p);
     }
 
     /**

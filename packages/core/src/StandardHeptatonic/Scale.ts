@@ -5,7 +5,6 @@ import { _System, StandardHeptatonicSystem } from "./System";
 import { _Pitch } from "./Pitch";
 import { Accidental } from "./Accidental";
 import { _Interval } from "./Interval";
-import { Pitch } from "../Pitch";
 
 const RomanNumerals = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'];
 
@@ -18,13 +17,16 @@ export class _Scale extends Scale<StandardHeptatonicSystem> {
         return new _Scale(ints, degs) as this;
     }
 
-    protected override _createDegree(index: number, acci: AsRational): _Degree {
-        return new _Degree(this, index, acci);
+    protected override _createDegree(index: number, acci: AsRational, period: number): _Degree {
+        return new _Degree(this, index, acci, period);
     }
 
     override at = super.at as (i: number, acci?: AsRational) => _Degree;
     override getExactDegree = super.getExactDegree as
         (p: _Pitch, opt?: { allowEnharmonic?: boolean }) => _Degree;
+
+    override getDegreesInRange = super.getDegreesInRange as
+        (l: _Pitch, r: _Pitch) => _Degree[];
 
     static fromIntervals(root: _Pitch, ints: _Interval[]) {
         const degs = [root];
@@ -40,6 +42,7 @@ export class _Scale extends Scale<StandardHeptatonicSystem> {
         return new _Scale(ints, degs);
     }
 
+    // TODO: support periods
     parseDegree(ex: string): _Degree | null {
         const match = ex.match(/^(?:([ivx]+)|\[(\d+)\])(.*)$/);
         if (!match) return null;
@@ -50,11 +53,11 @@ export class _Scale extends Scale<StandardHeptatonicSystem> {
         if (match[1]) {
             const romanDegree = RomanNumerals.findIndex((x) => x == match[1].toLowerCase());
             if (romanDegree < 0) return null;
-            return this._createDegree(romanDegree, acci);
+            return this._createDegree(romanDegree, acci, 0);
         } else {
             const degree = Number.parseInt(match[2]) - 1;
             if (isNaN(degree) || degree < 0 || degree >= this.degrees.length) return null;
-            return this._createDegree(degree, acci);
+            return this._createDegree(degree, acci, 0);
         }
     }
 }
@@ -65,15 +68,18 @@ export class _Degree extends Degree<StandardHeptatonicSystem> {
     constructor(
         scale: _Scale,
         index: number,
-        acci: AsRational
+        acci: AsRational,
+        period: number
     ) {
-        super(_System, scale, index, acci);
+        super(_System, scale, index, acci, period);
         this.scale = scale;
     }
 
-    protected _create(index: number, acci: AsRational) {
-        return new _Degree(this.scale, index, acci) as this;
+    protected _create(index: number, acci: AsRational, period: number) {
+        return new _Degree(this.scale, index, acci, period) as this;
     }
+
+    override toPitch = super.toPitch as () => _Pitch;
 
     toString(opt?: { preferArabic?: boolean }): string {
         const name = (opt?.preferArabic && this.scale.degrees.length <= RomanNumerals.length)

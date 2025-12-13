@@ -5,3 +5,5 @@ export * from './PitchSystem';
 export * from './Pitch';
 export * from './Interval';
 export * from './Tuning';
+export * from './Scale';
+export * from './Degree';

@@ -10,17 +10,17 @@ const Scale = StandardHeptatonic.Scale;
 // scales
 
 test('simple well-known scales', () => {
-    let s = Scales.major(PC.c);
-    expect(s.at(2).toPitch(4).toString()).toBe('e4');
+    let s = Scales.major(PC.b);
+    expect(s.at(2).toPitch().toString()).toBe('ds1');
 
     s = Scales.harmonicMinor(PC.c);
-    expect(s.at(2).toPitch(4).toString()).toBe('ef4');
+    expect(s.at(2).toPitch().toString()).toBe('ef0');
 
     s = Scales.major(PC.e);
-    expect(s.at(2).toPitch(4).toString()).toBe('gs4');
+    expect(s.at(2).withPeriod(4).toPitch().toString()).toBe('gs4');
 
     s = Scales.harmonicMinor(PC.e);
-    expect(s.at(2).toPitch(4).toString()).toBe('g4');
+    expect(s.at(2).withPeriod(4).toPitch().toString()).toBe('g4');
 });
 
 test('parseDegree', () => {
@@ -61,6 +61,16 @@ test('equality', () => {
     expect(Scales.major(PC.d).intervalEquals(Scales.major(PC.b)));
 });
 
+test('getDegreesInRange', () => {
+    const s = Scales.major(P.parse('fs')!);
+    expect(s.getDegreesInRange(P.parse('c4')!, P.parse('g4')!)
+        .map((x) => x.toPitch().toString())).toEqual(['cs4', 'ds4', 'es4', 'fs4']);
+
+    const s2 = Scales.major(P.parse('b')!);
+    expect(s2.getDegreesInRange(P.parse('c4')!, P.parse('g4')!)
+        .map((x) => x.toPitch().toString())).toEqual(['cs4', 'ds4', 'e4', 'fs4']);
+});
+
 test('getExactDegree', () => {
     expect(Scales.major(PC.c).getExactDegree(P.parse('es')!)).toBeNull();
     expect(Scales.major(PC.c).getExactDegree(P.parse('es')!, { allowEnharmonic: true })!.toString()).toBe('iv');
@@ -75,4 +85,12 @@ test('rotate', () => {
 test('transpose', () => {
     expect(Scales.C.major.transpose(I.parse('m3')!).equals(Scales.major(P.parse('ef')!))).toBe(true);
     expect(Scales.C.major.transpose(I.parse('-m2')!).equals(Scales.major(PC.b))).toBe(true);
+});
+
+test('Degree.next, Degree.previous', () => {
+    const s = Scales.major(P.parse('b')!);
+    expect(s.at(0).next().toPitch().toString()).toBe('cs1');
+    expect(s.at(6).next().toPitch().toString()).toBe('b1');
+    expect(s.at(0).previous().toPitch().toString()).toBe('as0');
+    expect(s.at(6).previous().toPitch().toString()).toBe('gs1');
 });

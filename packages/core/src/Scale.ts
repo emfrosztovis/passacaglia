@@ -30,7 +30,7 @@ export abstract class Scale<S extends PitchSystem> {
     }
 
     protected abstract _create(ints: readonly Interval<S>[], degs: readonly Pitch<S>[]): this;
-    protected abstract _createDegree(index: number, acci: AsRational): Degree<S>;
+    protected abstract _createDegree(index: number, acci: AsRational, period: number): Degree<S>;
 
     abstract parseDegree(ex: string): Degree<S> | null;
 
@@ -47,7 +47,20 @@ export abstract class Scale<S extends PitchSystem> {
      * Get the degree at an index and optionally with an accidental.
      */
     at(i: number, acci: AsRational = 0) {
-        return this._createDegree(i, acci);
+        return this._createDegree(i, acci, 0);
+    }
+
+    getDegreesInRange(l: Pitch<S>, h: Pitch<S>): Degree<S>[] {
+        const result: Degree<S>[] = [];
+        let current = this.at(0).withPeriod(l.period - 1);
+        while (current.toPitch().ord().value() < l.ord().value()) {
+            current = current.next();
+        }
+        while (current.toPitch().ord().value() <= h.ord().value()) {
+            result.push(current);
+            current = current.next();
+        }
+        return result;
     }
 
     getExactDegree(p: Pitch<S>, opt?: { allowEnharmonic?: boolean }): Degree<S> | null {

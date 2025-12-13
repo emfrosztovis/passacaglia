@@ -1,0 +1,34 @@
+{
+  "name": "species-counterpoint",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "pnpm tsdown",
+    "dev": "pnpm tsdown --watch",
+    "typecheck": "pnpm tsc --noEmit",
+    "test": "pnpm vitest"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "dependencies": {
+    "@js-sdsl/priority-queue": "^4.4.0",
+    "common": "workspace:*",
+    "core": "workspace:*",
+    "immutable": "^5.1.4",
+    "install": "^0.13.0",
+    "musicxml-interfaces": "^0.0.21"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "AGPL-3.0-only",
+  "packageManager": "pnpm@10.15.0",
+  "devDependencies": {
+    "vitest": "^4.0.15"
+  }
+}
