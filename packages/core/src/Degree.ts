@@ -1,4 +1,4 @@
-import { AsRational, Debug, Rational } from "common";
+import { AsRational, Debug, Hashable, Rational } from "common";
 import { PitchSystem } from "./PitchSystem";
 import { Scale } from "./Scale";
 import { Pitch } from "./Pitch";
@@ -6,7 +6,7 @@ import { Pitch } from "./Pitch";
 /**
  * Represents a degree in a scale, in a pitch system.
  */
-export abstract class Degree<S extends PitchSystem> {
+export abstract class Degree<S extends PitchSystem> implements Hashable {
     /** The index of the degree. */
     public readonly index: number;
 
@@ -33,6 +33,10 @@ export abstract class Degree<S extends PitchSystem> {
     protected abstract _create(index: number, acci: AsRational, period: number): this;
 
     abstract toString(): string;
+
+    hash(): string {
+        return `${this.index},${this.acci.hash()},${this.period}`;
+    }
 
     withPeriod(p: number) {
         return this._create(this.index, this.acci, p);

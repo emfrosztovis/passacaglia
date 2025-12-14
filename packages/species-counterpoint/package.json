@@ -22,6 +22,7 @@
     "core": "workspace:*",
     "immutable": "^5.1.4",
     "install": "^0.13.0",
+    "jzz": "^1.9.6",
     "musicxml-interfaces": "^0.0.21"
   },
   "keywords": [],

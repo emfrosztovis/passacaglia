@@ -8,6 +8,10 @@ export const I = H.Interval;
 export const S = H.Scale;
 export const Scales = H.Scales;
 
+export type NoteAttributes = {
+    isPassingTone?: boolean
+};
+
 export type Note = {
     /**
      * `null` means either it is not filled in, or it's a rest
@@ -15,9 +19,7 @@ export type Note = {
     pitch: H.Pitch | null,
     position: Rational,
     length: Rational,
-
-    isPassingTone?: boolean
-};
+} & NoteAttributes;
 
 export type GlobalNote = Note & {
     measureIndex: number,
@@ -89,7 +91,7 @@ export abstract class Measure {
     }
 
     toString(): string {
-        return this.notes.map((x) => `${x.pitch}`).join(' ');
+        return this.notes.map((x) => `${x.pitch}${x.isPassingTone ? '!' : ''}`).join(' ');
     }
 }
 

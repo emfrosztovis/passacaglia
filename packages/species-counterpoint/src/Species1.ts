@@ -32,7 +32,7 @@ export class WholeNoteMeasure extends CounterpointMeasure {
     ): { measure: CounterpointMeasure; cost: number }[] {
         const t = new Rational(s.parameters.measureLength * this.index);
         const rules = [enforceHarmonyIntervals];
-        return cxt.fillIn(rules, s, this, t,
+        return cxt.fillIn(rules, s, this, t, {},
             (p) => new WholeNoteMeasure(this.voiceIndex, this.index, this.ctx, p));
     }
 }

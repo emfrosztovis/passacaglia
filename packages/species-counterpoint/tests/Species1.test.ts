@@ -2,8 +2,11 @@ import { test } from "vitest";
 import { CounterpointScoreBuilder } from "../src/Basic";
 import { parseNotes, PC, Scales } from "../src/Common";
 import { FirstSpecies } from "../src/Species1";
+import { CounterpointContext } from "../src/Context";
+import { forbidPerfectsBySimilarMotion, forbidVoiceOverlapping } from "../src/rules/VerticalRules";
+import { enforceScaleTones, enforceMelodyIntervals } from "../src/rules/CandidateRules";
 
-const ctx = new FirstSpecies(
+const ctx = new CounterpointContext(
     Scales.major(PC.c),
     8, // targetMeasures
     {
@@ -11,18 +14,32 @@ const ctx = new FirstSpecies(
     }
 );
 
+ctx.advanceReward = 20;
+
+ctx.localRules = [
+    forbidVoiceOverlapping,
+    forbidPerfectsBySimilarMotion,
+];
+
+ctx.candidateRules = [
+    enforceScaleTones,
+    enforceMelodyIntervals,
+];
+
 test('first species', () => {
     const score = new CounterpointScoreBuilder(ctx)
-        .soprano()
-        .tenor()
+        .soprano(FirstSpecies)
+        .alto(FirstSpecies)
+        // .tenor(FirstSpecies)
         .cantus([
-            parseNotes(['c2', 4]),
-            parseNotes(['d2', 4]),
-            parseNotes(['e2', 4]),
-            parseNotes(['g2', 4]),
-            parseNotes(['f2', 4]),
-            parseNotes(['d2', 4]),
-            parseNotes(['c2', 4]),
+            parseNotes(['c3', 4]),
+            parseNotes(['d3', 4]),
+            parseNotes(['e3', 4]),
+            parseNotes(['g3', 4]),
+            parseNotes(['f3', 4]),
+            parseNotes(['d3', 4]),
+            parseNotes(['b2', 4]),
+            parseNotes(['c3', 4]),
         ])
         .build();
 

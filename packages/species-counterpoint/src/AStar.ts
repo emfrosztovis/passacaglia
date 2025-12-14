@@ -40,7 +40,6 @@ export function aStar<N extends AStarNode>(start: N): AStarResult<N> | null {
         if (current.isGoal)
             return { path: reconstructPath(cameFrom, current), cost: currentG };
 
-        if (closed.has(currentHash)) continue;
         closed.add(currentHash);
 
         for (const { node: neighbor, cost } of current.getNeighbors()) {

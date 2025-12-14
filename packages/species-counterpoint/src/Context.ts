@@ -1,8 +1,8 @@
 import { Debug, Rational } from "common";
 import { aStar, AStarNode } from "./AStar";
-import { Score, H, Parameters } from "./Common";
+import { Score, H, Parameters, NoteAttributes } from "./Common";
 import { CounterpointMeasure, CounterpointVoice } from "./Basic";
-import { PitchMap } from "core";
+import { HashMap } from "common";
 import { enforceScaleTones, parsePreferred } from "./rules/CandidateRules";
 
 export type LocalRule = (
@@ -15,50 +15,41 @@ export type GlobalRule = (
 
 export type CandidateRule = (
     ctx: CounterpointContext, s: Score, v: CounterpointVoice, t: Rational,
-    candidates: PitchMap<H.Pitch, number> | null
-) => PitchMap<H.Pitch, number>;
+    candidates: HashMap<H.Pitch, number> | null, attr: NoteAttributes
+) => HashMap<H.Pitch, number>;
 
 export class CounterpointContext {
     localRules: LocalRule[] = [];
     globalRules: GlobalRule[] = [];
     candidateRules: CandidateRule[] = [enforceScaleTones];
-    advanceReward = 1;
-
-    melodicIntervals = parsePreferred(
-        ['m2',   0],
-        ['M2',   0],
-        ['-m2',  3],
-        ['-M2',  3],
-
-        ['m3',   2],
-        ['M3',   2],
-        ['-m3',  3],
-        ['-M3',  3],
-
-        ['P4',   4],
-        ['-P4',  4],
-
-        ['P5',   4],
-        ['-P5',  4],
-
-        ['m6',   5],
-        ['M6',   5],
-        ['-m6',  5],
-        ['-M6',  5],
-
-        ['P8',   6],
-        ['-P8',  6]
-    );
+    advanceReward = 20;
 
     harmonyIntervals = parsePreferred(
-        ['m3', 0], ['M3', 0], ['m6', 0], ['M6', 0], ['P4', 1], ['P5', 2], ['P1', 3]);
+        ['m3', 0], ['M3', 0], ['m6', 0], ['M6', 0], ['P4', 10], ['P5', 20], ['P1', 50]);
+
+    melodicIntervals = parsePreferred(
+        ['m2',    0], ['M2',    0], ['-m2',  30], ['-M2',  30],
+        ['m3',   30], ['M3',   30], ['-m3',  30], ['-M3',  30],
+        ['P4',   40],               ['-P4',  40],
+        ['P5',   40],               ['-P5',  40],
+        ['m6',   50], ['M6',   50], ['-m6',  50], ['-M6',  50],
+        ['P8',   60],               ['-P8',  60],
+        ['P1',  100],
+    );
 
     forbidWithBass = [H.Interval.parse('P4')!];
 
-    getCandidates(rules: CandidateRule[], s: Score, v: CounterpointVoice, t: Rational) {
-        let candidates: PitchMap<H.Pitch, number> | null = null;
+    allowChromaticPassingTones = false;
+
+    allowUnison = false;
+
+    getCandidates(
+        rules: CandidateRule[], s: Score, v: CounterpointVoice, t: Rational,
+        attr: NoteAttributes
+    ) {
+        let candidates: HashMap<H.Pitch, number> | null = null;
         for (const r of [...this.candidateRules, ...rules]) {
-            candidates = r(this, s, v, t, candidates);
+            candidates = r(this, s, v, t, candidates, attr);
             if (candidates.size == 0) return candidates;
         }
         Debug.assert(candidates !== null);
@@ -68,12 +59,13 @@ export class CounterpointContext {
     fillIn(
         rules: CandidateRule[],
         s: Score, m: CounterpointMeasure, t: Rational,
+        attr: NoteAttributes,
         create: (p: H.Pitch) => CounterpointMeasure,
         costOffset = 0,
     ) {
         const voice = s.voices[m.voiceIndex];
         Debug.assert(voice instanceof CounterpointVoice);
-        const candidates = [...this.getCandidates(rules, s, voice, t).entries()];
+        const candidates = [...this.getCandidates(rules, s, voice, t, attr).entries()];
 
         return candidates.flatMap(([p, cost]) => {
             const m = create(p);

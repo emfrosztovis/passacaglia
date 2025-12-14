@@ -1,8 +1,7 @@
-import { Rational } from "common";
-import { H, Score } from "../Common";
-import { CounterpointContext, LocalRule } from "../Context";
+import { H } from "../Common";
+import { LocalRule } from "../Context";
 
-export const forbidVoiceOverlapping: LocalRule = (_ctx, s, v, t) => {
+export const forbidVoiceOverlapping: LocalRule = (ctx, s, v, t) => {
     const x1 = s.noteAt(t, v.index);
     if (!x1?.pitch) return null;
     const end = x1.globalPosition.add(x1.length);
@@ -10,15 +9,19 @@ export const forbidVoiceOverlapping: LocalRule = (_ctx, s, v, t) => {
 
     if (v.index > 0) {
         const ns = s.noteBetween(x1.globalPosition, end, v.index - 1);
-        for (const n1 of ns)
-            if (n1.pitch && n1.pitch.ord() <= ord)
+        for (const n1 of ns) {
+            const nord = n1.pitch?.ord();
+            if (nord && (nord < ord || (ctx.allowUnison && nord == ord)))
                 return `voice overlap between upper, ${v.index}`;
+        }
     }
     if (v.index < s.voices.length - 1) {
         const ns = s.noteBetween(x1.globalPosition, end, v.index + 1);
-        for (const n1 of ns)
-            if (n1.pitch && n1.pitch.ord() >= ord)
+        for (const n1 of ns) {
+            const nord = n1.pitch?.ord();
+            if (nord && (nord > ord || (ctx.allowUnison && nord == ord)))
                 return `voice overlap between lower, ${v.index}`;
+        }
     }
     return null;
 };
@@ -43,6 +46,7 @@ export const forbidPerfectsBySimilarMotion: LocalRule = (_ctx, s, v, t) => {
 
         // similar motion?
         const sign1 = Math.sign(n0.pitch.distanceTo(n1.pitch).num);
+        if (sign0 == sign1 && sign0 == 0) continue;
 
         const d0 = x0.pitch.intervalTo(n0.pitch);
         const d1 = x1.pitch.intervalTo(n1.pitch);

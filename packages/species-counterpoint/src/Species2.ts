@@ -44,10 +44,10 @@ export class HalfNoteMeasure extends CounterpointMeasure {
 
         if (this.p0 == null) {
             if (this.index == 0) // start first measure from the second beat
-                return cxt.fillIn([enforceHarmonyIntervals], s, this, t1,
+                return cxt.fillIn([enforceHarmonyIntervals], s, this, t1, {},
                     (p) => new HalfNoteMeasure(this.voiceIndex, this.index, this.ctx, null, p));
             else
-                return cxt.fillIn([enforceHarmonyIntervals], s, this, t0,
+                return cxt.fillIn([enforceHarmonyIntervals], s, this, t0, {},
                 (p) => new HalfNoteMeasure(this.voiceIndex, this.index, this.ctx, p, null));
         }
 
@@ -55,11 +55,11 @@ export class HalfNoteMeasure extends CounterpointMeasure {
             const next: { measure: CounterpointMeasure; cost: number }[] = [];
 
             // non-passing tones
-            next.push(...cxt.fillIn([enforceHarmonyIntervals], s, this, t1,
-                (p) => new HalfNoteMeasure(this.voiceIndex, this.index, this.ctx, this.p0, p), 1));
+            next.push(...cxt.fillIn([enforceHarmonyIntervals], s, this, t1, {},
+                (p) => new HalfNoteMeasure(this.voiceIndex, this.index, this.ctx, this.p0, p), 10));
 
             // passing tones
-            next.push(...cxt.fillIn([makePassingTone], s, this, t1,
+            next.push(...cxt.fillIn([makePassingTone], s, this, t1, { isPassingTone: true },
                 (p) => new HalfNoteMeasure(
                         this.voiceIndex, this.index, this.ctx, this.p0, p, true)));
 

@@ -23,7 +23,7 @@ export class _Scale extends Scale<StandardHeptatonicSystem> {
 
     override at = super.at as (i: number, acci?: AsRational) => _Degree;
     override getExactDegree = super.getExactDegree as
-        (p: _Pitch, opt?: { allowEnharmonic?: boolean }) => _Degree;
+        (p: _Pitch, opt?: { allowEnharmonic?: boolean }) => _Degree | null;
 
     override getDegreesInRange = super.getDegreesInRange as
         (l: _Pitch, r: _Pitch) => _Degree[];
