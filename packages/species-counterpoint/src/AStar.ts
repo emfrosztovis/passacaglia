@@ -63,11 +63,11 @@ export function aStar<N extends AStarNode>(start: N): AStarResult<N> | null {
             }
         }
 
-        if (counter % 100 == 0) {
+        if (counter % 500 == 0) {
             Debug.info(`counter=${counter}`);
         }
         counter++;
-        if (counter > 10000) break;
+        // if (counter > 10000) break;
     }
 
     return null; // No path found

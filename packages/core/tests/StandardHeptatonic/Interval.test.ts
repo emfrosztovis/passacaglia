@@ -105,6 +105,9 @@ test('toSimple', () => {
     expect(x.toSimple({ preserveUpToSteps: 7 }).equals(I.parse('M3')!)).toBe(true);
     expect(x.toSimple({ preserveUpToSteps: 12 }).equals(I.parse('M10')!)).toBe(true);
     expect(x.toSimple({ preserveUpToSteps: 17 }).equals(I.parse('M17')!)).toBe(true);
+
+    const y = I.parse('d8')!;
+    expect(y.toSimple().equals(I.parse('d8')!)).toBe(true);
 });
 
 test('matches', () => {

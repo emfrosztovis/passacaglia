@@ -1,4 +1,4 @@
-import { AsRational, Debug, Rational } from "common";
+import { AsRational, Debug, Hashable, Rational } from "common";
 import { PitchSystem } from "./PitchSystem";
 import { Interval } from "./Interval";
 import { modulo } from "./Utils";
@@ -11,7 +11,7 @@ export type PitchConstructor<S extends PitchSystem, P extends Pitch<S> = Pitch<S
 /**
  * Represents a musical pitch in a scale system: a 3-tuple (degree_index, accidental, period_index). It can also represent a pitch class in some contexts, where the period number is ignored.
  */
-export abstract class Pitch<S extends PitchSystem> {
+export abstract class Pitch<S extends PitchSystem> implements Hashable {
     /** A nonnegative integer representing the degree index. */
     public readonly index: number;
 
@@ -35,6 +35,10 @@ export abstract class Pitch<S extends PitchSystem> {
     protected abstract _create(deg: number, acci: AsRational, period: number): this;
 
     abstract toString(): string;
+
+    hash(): string {
+        return `${this.index},${this.acci.hash()},${this.period}`;
+    }
 
     equals(other: Pitch<S>): boolean {
         return this.index === other.index
@@ -100,4 +104,72 @@ export abstract class Pitch<S extends PitchSystem> {
      * Get the interval from `this` to `other`. It will be negative if `this` is higher than `other`.
      */
     abstract intervalTo(other: Pitch<S>): Interval<S>;
+}
+
+export class PitchMap<P extends Pitch<any>, V = void> {
+    #map = new Map<string, [P, V]>();
+
+    constructor(it?: Iterable<[P, V]>) {
+        if (it) for (const p of it)
+            this.add(...p);
+    }
+
+    get size() {
+        return this.#map.size;
+    }
+
+    clone(): PitchMap<P, V> {
+        return new PitchMap(this.entries());
+    }
+
+    filter(pred: (p: P, v: V) => boolean): this {
+        for (const [k, [p, v]] of this.#map.entries()) {
+            if (!pred(p, v)) this.#map.delete(k);
+        }
+        return this;
+    }
+
+    intersectWith(s: PitchMap<P, V>, combine?: (a: V, b: V) => V): this {
+        for (const [k, [p, v]] of this.#map.entries()) {
+            if (!s.#map.has(k)) this.#map.delete(k);
+            else if (combine)
+                this.#map.set(k, [p, combine(v, s.#map.get(k)![1])]);
+        }
+        return this;
+    }
+
+    unionWith(s: PitchMap<P, V>, combine?: (a: V, b: V) => V): this {
+        for (const [k, [p, v]] of s.#map) {
+            if (combine && this.#map.has(k))
+                this.#map.set(k, [p, combine(this.#map.get(k)![1], v)]);
+            else
+                this.#map.set(k, [p, v]);
+        }
+        return this;
+    }
+
+    difference(s: PitchMap<P, V>) {
+        const diff = new PitchMap<P, V>();
+        for (const [k, v] of this.#map)
+            if (!s.#map.has(k)) diff.#map.set(k, v);
+        for (const [k, v] of s.#map)
+            if (!this.#map.has(k)) diff.#map.set(k, v);
+        return diff;
+    }
+
+    add(p: P, v: V) {
+        this.#map.set(p.hash(), [p, v]);
+    }
+
+    delete(p: P) {
+        return this.#map.delete(p.hash());
+    }
+
+    has(p: P) {
+        return this.#map.has(p.hash());
+    }
+
+    entries() {
+        return this.#map.values();
+    }
 }

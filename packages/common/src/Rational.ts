@@ -1,3 +1,4 @@
+import { Hashable } from "./Common";
 import { Debug } from "./Debug";
 
 function gcd(a: number, b: number): number {
@@ -13,7 +14,7 @@ export class InvalidRationalError extends Error {
 
 export type AsRational = number | Rational;
 
-export class Rational {
+export class Rational implements Hashable {
     readonly num: number;
     readonly den: number;
 
@@ -112,6 +113,10 @@ export class Rational {
 
     abs(): Rational {
         return new Rational(Math.abs(this.num), this.den);
+    }
+
+    hash(): string {
+        return `${this.num},${this.den}`;
     }
 
     equals(other: AsRational): boolean {

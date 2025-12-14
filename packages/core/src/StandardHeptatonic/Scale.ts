@@ -42,6 +42,20 @@ export class _Scale extends Scale<StandardHeptatonicSystem> {
         return new _Scale(ints, degs);
     }
 
+    static fromPitches(degs: _Pitch[]) {
+        const ints = [];
+        for (let i = 1; i < degs.length; i++) {
+            const int = degs[i-1].intervalTo(degs[i]);
+            Debug.assert(int.sign > 0);
+            ints.push(int);
+        }
+        const wrap = degs.at(-1)!.intervalTo(degs[0].addPeriod(1));
+        Debug.assert(wrap.sign > 0);
+        Debug.assert(wrap.distance.value() < _System.nPitchClasses);
+        ints.push(wrap);
+        return new _Scale(ints, degs);
+    }
+
     // TODO: support periods
     parseDegree(ex: string): _Degree | null {
         const match = ex.match(/^(?:([ivx]+)|\[(\d+)\])(.*)$/);

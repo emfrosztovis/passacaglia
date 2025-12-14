@@ -14,7 +14,9 @@ export type Note = {
      */
     pitch: H.Pitch | null,
     position: Rational,
-    length: Rational
+    length: Rational,
+
+    isPassingTone?: boolean
 };
 
 export type GlobalNote = Note & {
@@ -78,14 +80,12 @@ export abstract class Measure {
     }
 
     noteBefore(localT: Rational): Note | null {
-        const i = this.notes.findIndex((x) => {
-            const d = localT.sub(x.position);
-            if (d.num < 0) return false;
-            if (localT.sub(x.length).num < 0) return false;
-            return true;
-        });
-        if (i < 1) return null;
-        return this.notes.at(i-1)!;
+        for (let i = this.notes.length-1; i >= 0; i--) {
+            const x = this.notes[i];
+            if (localT.sub(x.position).num > 0)
+                return x;
+        }
+        return null;
     }
 
     toString(): string {

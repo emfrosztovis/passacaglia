@@ -12,8 +12,7 @@ export abstract class CounterpointMeasure extends Measure {
 
     abstract getNextSteps(cxt: CounterpointContext, s: Score): {
         measure: CounterpointMeasure,
-        cost: number,
-        heuristic?: number
+        cost: number
     }[];
 }
 
@@ -30,8 +29,9 @@ export class BlankMeasure extends CounterpointMeasure {
         }];
     }
 
-    getNextSteps(cxt: CounterpointContext, s: Score) {
-        return cxt.makeNewMeasure(s, this.voiceIndex, this.index);
+    getNextSteps(_cxt: CounterpointContext, s: Score) {
+        return (s.voices[this.voiceIndex] as CounterpointVoice)
+            .makeNewMeasure(s, this.voiceIndex, this.index);
     }
 
     hash(): string {
@@ -68,21 +68,33 @@ export class FixedVoice extends Voice {
     }
 }
 
-export class CounterpointVoice extends Voice {
+export type VoiceConstructor = new (
+    index: number,
+    ctx: CounterpointContext,
+    measures: CounterpointMeasure[],
+    lowerRange: H.Pitch,
+    higherRange: H.Pitch,
+    name: string
+) => CounterpointVoice;
+
+export abstract class CounterpointVoice extends Voice {
     constructor(
         index: number,
+        protected readonly ctx: CounterpointContext,
         public readonly measures: CounterpointMeasure[],
         public readonly lowerRange: H.Pitch,
         public readonly higherRange: H.Pitch,
-        public readonly name = 'Cantus'
+        public readonly name: string
     ) {
         super(index);
     }
 
-    clone(): this {
-        return new CounterpointVoice(
-            this.index, [...this.measures], this.lowerRange, this.higherRange, this.name) as this;
-    }
+    abstract clone(): this;
+
+    abstract makeNewMeasure: (s: Score, iv: number, i: number) => {
+        measure: CounterpointMeasure,
+        cost: number
+    }[];
 }
 
 export class CounterpointScoreBuilder {
@@ -96,13 +108,13 @@ export class CounterpointScoreBuilder {
         return new Score(this.ctx.parameters, this.#voices);
     }
 
-    voice(name: string, l: H.Pitch, h: H.Pitch): this {
+    voice(v: VoiceConstructor, name: string, l: H.Pitch, h: H.Pitch): this {
         const vi = this.#voices.length;
         const ms: BlankMeasure[] = [];
         for (let i = 0; i < this.ctx.targetMeasures; i++)
             ms.push(new BlankMeasure(vi, i, this.ctx));
 
-        this.#voices.push(new CounterpointVoice(vi, ms, l, h, name));
+        this.#voices.push(new v(vi, this.ctx, ms, l, h, name));
         return this;
     }
 
@@ -116,19 +128,19 @@ export class CounterpointScoreBuilder {
     // voice ranges taken from:
     // https://musictheory.pugetsound.edu/mt21c/VoiceRanges.html
 
-    soprano() {
-        return this.voice('Soprano', H.Pitch.parse('d4')!, H.Pitch.parse('fs5')!);
+    soprano(v: VoiceConstructor) {
+        return this.voice(v, 'Soprano', H.Pitch.parse('d4')!, H.Pitch.parse('fs5')!);
     }
 
-    alto() {
-        return this.voice('Alto', H.Pitch.parse('g3')!, H.Pitch.parse('cs5')!);
+    alto(v: VoiceConstructor) {
+        return this.voice(v, 'Alto', H.Pitch.parse('g3')!, H.Pitch.parse('cs5')!);
     }
 
-    tenor() {
-        return this.voice('Tenor', H.Pitch.parse('ef3')!, H.Pitch.parse('fs4')!);
+    tenor(v: VoiceConstructor) {
+        return this.voice(v, 'Tenor', H.Pitch.parse('ef3')!, H.Pitch.parse('fs4')!);
     }
 
-    bass() {
-        return this.voice('Tenor', H.Pitch.parse('e2')!, H.Pitch.parse('c4')!);
+    bass(v: VoiceConstructor) {
+        return this.voice(v, 'Tenor', H.Pitch.parse('e2')!, H.Pitch.parse('c4')!);
     }
 }

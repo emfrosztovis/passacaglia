@@ -1,4 +1,4 @@
-import { AsRational, Debug, Rational } from "common";
+import { AsRational, Debug, Hashable, Rational } from "common";
 import { PitchSystem } from "./PitchSystem";
 
 export type IntervalConstructor<S extends PitchSystem, I extends Interval<S> = Interval<S>>
@@ -7,7 +7,7 @@ export type IntervalConstructor<S extends PitchSystem, I extends Interval<S> = I
 /**
  * Represents a signed musical interval in a scale system: a 3-tuple (steps, distance, sign).
  */
-export abstract class Interval<S extends PitchSystem> {
+export abstract class Interval<S extends PitchSystem> implements Hashable {
     /** A nonnegative integer representing the number of steps between the two pitches. E.g. 0 means they share the same degree, 1 means the higher pitch is the next degree. */
     public readonly steps: number;
 
@@ -32,6 +32,10 @@ export abstract class Interval<S extends PitchSystem> {
 
     abstract toAbbreviation(): string;
     abstract toString(): string;
+
+    hash(): string {
+        return `${this.sign > 0 ? '+' : '-'}${this.steps},${this.distance.hash()}`;
+    }
 
     equals(other: Interval<S>) {
         return this.sign == other.sign
@@ -74,7 +78,10 @@ export abstract class Interval<S extends PitchSystem> {
             : 0;
 
         let periods = Math.max(0,
-            Math.floor(this.steps / this.system.nDegrees) - preservePeriods);
+            Math.min(
+                Math.floor(this.steps / this.system.nDegrees),
+                Math.floor(this.distance.div(this.system.nPitchClasses).value())
+            ) - preservePeriods);
         let newSteps = this.steps - periods * this.system.nDegrees;
 
         if (opt?.preserveUpToSteps && newSteps > opt?.preserveUpToSteps) {
@@ -101,6 +108,10 @@ export abstract class Interval<S extends PitchSystem> {
     matchesEnharmonically(other: Interval<S>) {
         return other.toSimple().equalsEnharmonically(this.toSimple())
             && other.distance.value() >= this.distance.value();
+    }
+
+    withSign(other: 1 | -1): this {
+        return this._create(this.steps, this.distance, other);
     }
 
     negate(): this {

@@ -6,13 +6,13 @@ import { Degree } from "./Degree";
 import { rotateArray } from "./Utils";
 
 /**
- * Represents a scale in a pitch system, starting from a given pitch class (the root) and consisting of several degrees.
+ * Represents a scale in a pitch system, starting from a given pitch class (the root) and consisting of several degrees. Notably, we allow enharmonically equal tones in the scale. This is to accomodate spelling alternatives (as in the chromatic scale).
  */
 export abstract class Scale<S extends PitchSystem> {
-    /** List of degrees. Always strictly increasing and spans less than the system's period. The first degree is the root. */
+    /** List of degrees. Always non-decreasing and spans less than the system's period. The first degree is the root. */
     public readonly degrees: readonly Pitch<S>[];
 
-    /** List of intervals. Always positive. */
+    /** List of intervals. Always nonnegative. */
     public readonly intervals: readonly Interval<S>[];
 
     public get root() {

@@ -27,5 +27,5 @@ test('first species', () => {
         .build();
 
     const result = ctx.solve(score);
-    console.log(result);
+    console.log(result?.toString());
 });

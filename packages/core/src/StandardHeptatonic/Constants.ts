@@ -14,8 +14,10 @@ export const PitchClasses = {
     b: new _Pitch(6),
 };
 
+const CChromatic = _Scale.fromPitches(['c', 'cs', 'df', 'd', 'ds', 'ef', 'e', 'f', 'fs', 'gf', 'g', 'gs', 'af', 'a', 'as', 'bf', 'b'].map((x) => _Pitch.parse(x)!));
+
 const CMajor = _Scale.fromIntervals(_Pitch.parse('c0')!,
-            ['M2', 'M2', 'm2', 'M2', 'M2', 'M2', 'm2'].map((x) => _Interval.parse(x)!));
+    ['M2', 'M2', 'm2', 'M2', 'M2', 'M2', 'm2'].map((x) => _Interval.parse(x)!));
 const CHarmonicMinor = _Scale.fromIntervals(_Pitch.parse('c0')!,
     ['M2', 'm2', 'M2', 'M2', 'm2', 'A2', 'm2'].map((x) => _Interval.parse(x)!));
 
@@ -29,7 +31,8 @@ const C = {
     locrian    : CMajor.rotate(6),
 
     major: CMajor,
-    harmonicMinor: CHarmonicMinor
+    harmonicMinor: CHarmonicMinor,
+    chromatic: CChromatic
 };
 
 export const Scales = {
