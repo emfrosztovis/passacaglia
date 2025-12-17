@@ -17,18 +17,21 @@ export type Note = {
      * `null` means either it is not filled in, or it's a rest
      */
     pitch: H.Pitch | null,
-    position: Rational,
-    length: Rational,
 } & NoteAttributes;
 
-export type GlobalNote = Note & {
+export type TimedNote = Note & {
+    position: Rational,
+    length: Rational,
+};
+
+export type GlobalNote = TimedNote & {
     measureIndex: number,
     voiceIndex: number,
     globalPosition: Rational
 };
 
 export function parseNotes(...notes: [string, AsRational][]) {
-    const n: Note[] = [];
+    const n: TimedNote[] = [];
     let position = new Rational(0);
     for (const [p, len] of notes) {
         const pitch = H.Pitch.parse(p);
@@ -49,7 +52,7 @@ export abstract class Measure {
         Debug.assert(index >= 0);
     }
 
-    abstract readonly notes: Note[];
+    abstract readonly notes: TimedNote[];
     abstract readonly writable: boolean;
     abstract hash(): string;
 
@@ -60,7 +63,7 @@ export abstract class Measure {
         }).join();
     }
 
-    notesBetween(t0: Rational, t1: Rational, inclusive = false): Note[] {
+    notesBetween(t0: Rational, t1: Rational, inclusive = false): TimedNote[] {
         return this.notes.filter((x) => {
             const d0 = t0.sub(x.position.add(x.length));
             const d1 = t1.sub(x.position);
@@ -70,7 +73,7 @@ export abstract class Measure {
         });
     }
 
-    noteAt(localT: Rational): Note {
+    noteAt(localT: Rational): TimedNote {
         const found = this.notes.find((x) => {
             const d = localT.sub(x.position);
             if (d.num < 0) return false;
@@ -81,7 +84,7 @@ export abstract class Measure {
         return found;
     }
 
-    noteBefore(localT: Rational): Note | null {
+    noteBefore(localT: Rational): TimedNote | null {
         for (let i = this.notes.length-1; i >= 0; i--) {
             const x = this.notes[i];
             if (localT.sub(x.position).num > 0)
@@ -117,7 +120,7 @@ export abstract class Voice {
 }
 
 export type Parameters = {
-    measureLength: 4;
+    measureLength: number;
 };
 
 export class Score {

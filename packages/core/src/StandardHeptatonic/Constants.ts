@@ -21,6 +21,9 @@ const CMajor = _Scale.fromIntervals(_Pitch.parse('c0')!,
 const CHarmonicMinor = _Scale.fromIntervals(_Pitch.parse('c0')!,
     ['M2', 'm2', 'M2', 'M2', 'm2', 'A2', 'm2'].map((x) => _Interval.parse(x)!));
 
+const CCompleteMinor = _Scale.fromPitches(
+    ['c', 'd', 'ef', 'f', 'g', 'af', 'a', 'bf', 'b'].map((x) => _Pitch.parse(x)!));
+
 const C = {
     ionian     : CMajor,
     dorian     : CMajor.rotate(1),
@@ -32,7 +35,26 @@ const C = {
 
     major: CMajor,
     harmonicMinor: CHarmonicMinor,
-    chromatic: CChromatic
+
+    /**
+     * Chromatic scale with enharmonics.
+     *
+     * ```
+     *  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16
+     *  C Cs Df  D Ds Ef  E  F Fs Gf  G Gs Af  A As Bf  B
+     * ````
+     */
+    chromatic: CChromatic,
+
+    /**
+     * Includes all altered tones as degrees.
+     *
+     * ```
+     *  0  1  2  3  4  5  6  7  8
+     *  C  D Ef  F  G Af  A Bf  B
+     * ````
+     */
+    completeMinor: CCompleteMinor,
 };
 
 export const Scales = {

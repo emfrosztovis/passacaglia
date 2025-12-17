@@ -1,5 +1,5 @@
 import { Debug } from "common";
-import { H } from "../Common";
+import { H, Scales } from "../Common";
 import { CandidateRule } from "../Context";
 import { HashMap } from "common";
 
@@ -20,6 +20,27 @@ export type DegreeMatrix = {
         forbidOther?: boolean
     }>,
 };
+
+export const DegreeMatrixPreset = {
+    major: {
+        upward: new HashMap([
+            [ Scales.C.major.at(6), {
+                next: parsePreferred(['m2', -50]),
+            } ],
+        ]),
+        downward: new HashMap([
+            [ Scales.C.major.at(6), {
+                next: parsePreferred(['m2', -30]),
+            } ],
+            [ Scales.C.major.at(5), {
+                next: parsePreferred(['-M2', -20]),
+            } ],
+            [ Scales.C.major.at(3), {
+                next: parsePreferred(['-m2', -10]),
+            } ]
+        ]),
+    } satisfies DegreeMatrix,
+}
 
 export const enforceDirectionalDegreeMatrix: (m: DegreeMatrix) => CandidateRule =
 (m) => (ctx, s, v, t, c) => {
@@ -114,7 +135,48 @@ export const enforceMelodyIntervals: CandidateRule = (ctx, s, v, t, c, attr) =>
     return c.intersectWith(nexts, (a, b) => a + b);
 };
 
-export const enforceHarmonyIntervals: CandidateRule
+/**
+ * Enforces that the candidates form consonance with voices that are moving at the same point.
+ */
+export const enforceVerticalConsonanceWithMoving: CandidateRule
+    = (ctx, s, v, t, c) =>
+{
+    Debug.assert(c !== null);
+    const otherPitches: H.Pitch[] = [];
+
+    for (let i = 0; i < s.voices.length; i++) {
+        if (i == v.index) continue;
+        const n = s.noteAt(t, i);
+        if (!n?.pitch) continue;
+
+        const prev = s.noteBefore(t, i);
+        if (!prev?.pitch || prev.pitch !== n.pitch) {
+            // moving
+            otherPitches.push(n.pitch);
+        }
+    }
+
+    outer: for (const [p, cost] of c.entries()) {
+        let newCost = 0;
+
+        for (const x of otherPitches) {
+            const int = x.intervalTo(p).toSimple().abs();
+            const c2 = ctx.harmonyIntervals.get(int);
+            if (c2 === undefined) {
+                c.delete(p);
+                continue outer;
+            }
+            newCost += c2 / otherPitches.length;
+        }
+        c.add(p, cost + newCost);
+    }
+    return c;
+};
+
+/**
+ * Enforces that the candidates form consonance with all other voices.
+ */
+export const enforceVerticalConsonanceStrict: CandidateRule
     = (ctx, s, v, t, c) =>
 {
     Debug.assert(c !== null);
@@ -155,10 +217,11 @@ export const enforceHarmonyIntervals: CandidateRule
             const int = bassPitch.intervalTo(p).toSimple();
             if (ctx.forbidWithBass.find((f) => f.equals(int))) {
                 c.delete(p);
-                continue outer;
+                continue;
             }
         }
     }
 
     return c;
 }
+

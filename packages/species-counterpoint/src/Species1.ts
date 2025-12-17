@@ -1,11 +1,11 @@
 import { Debug, Rational } from "common";
-import { H, Note, Score } from "./Common";
+import { H, TimedNote, Score } from "./Common";
 import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointVoice } from "./Basic";
-import { enforceHarmonyIntervals } from "./rules/CandidateRules";
+import { enforceVerticalConsonanceStrict } from "./rules/CandidateRules";
 
-export class WholeNoteMeasure extends CounterpointMeasure {
-    public readonly notes: Note[];
+export class FirstSpeciesMeasure extends CounterpointMeasure {
+    public readonly notes: TimedNote[];
     get writable() {
         return this.p0 === null;
     };
@@ -18,22 +18,22 @@ export class WholeNoteMeasure extends CounterpointMeasure {
         super(voiceIndex, index, ctx);
         this.notes = [{
             pitch: p0,
-            length: new Rational(4),
+            length: new Rational(ctx.parameters.measureLength),
             position: new Rational(0)
         }];
     }
 
     hash(): string {
-        return `whole${this.hashNotes()}`;
+        return `sp1${this.hashNotes()}`;
     }
 
     getNextSteps(
-        cxt: CounterpointContext, s: Score
+        ctx: CounterpointContext, s: Score
     ): { measure: CounterpointMeasure; cost: number }[] {
         const t = new Rational(s.parameters.measureLength * this.index);
-        const rules = [enforceHarmonyIntervals];
-        return cxt.fillIn(rules, s, this, t, {},
-            (p) => new WholeNoteMeasure(this.voiceIndex, this.index, this.ctx, p));
+        const rules = [enforceVerticalConsonanceStrict];
+        return ctx.fillIn(rules, s, this, t, {},
+            (p) => new FirstSpeciesMeasure(this.voiceIndex, this.index, this.ctx, p));
     }
 }
 
@@ -45,7 +45,7 @@ export class FirstSpecies extends CounterpointVoice {
 
     makeNewMeasure = (s: Score, iv: number, i: number) => {
         return [{
-            measure: new WholeNoteMeasure(iv, i, this.ctx),
+            measure: new FirstSpeciesMeasure(iv, i, this.ctx),
             cost: 0,
         }];
     };

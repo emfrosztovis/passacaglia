@@ -1,5 +1,5 @@
 import { Rational } from "common";
-import { H, Measure, Note, Score, Voice } from "./Common";
+import { H, Measure, TimedNote, Score, Voice } from "./Common";
 import { CounterpointContext } from "./Context";
 
 export abstract class CounterpointMeasure extends Measure {
@@ -10,14 +10,14 @@ export abstract class CounterpointMeasure extends Measure {
         super(voiceIndex, index);
     }
 
-    abstract getNextSteps(cxt: CounterpointContext, s: Score): {
+    abstract getNextSteps(ctx: CounterpointContext, s: Score): {
         measure: CounterpointMeasure,
         cost: number
     }[];
 }
 
 export class BlankMeasure extends CounterpointMeasure {
-    readonly notes: Note[];
+    readonly notes: TimedNote[];
     readonly writable = true;
 
     constructor(voiceIndex: number, index: number, ctx: CounterpointContext) {
@@ -44,7 +44,7 @@ export class FixedMeasure extends Measure {
 
     constructor(
         voiceIndex: number, index: number,
-        public readonly notes: Note[]
+        public readonly notes: TimedNote[]
     ) {
         super(voiceIndex, index);
     }
@@ -118,7 +118,7 @@ export class CounterpointScoreBuilder {
         return this;
     }
 
-    cantus(measures: Note[][]): this {
+    cantus(measures: TimedNote[][]): this {
         const vi = this.#voices.length;
         const ms = measures.map((x, i) => new FixedMeasure(vi, i, x));
         this.#voices.push(new FixedVoice(vi, ms));

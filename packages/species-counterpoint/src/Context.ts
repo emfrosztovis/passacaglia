@@ -7,7 +7,7 @@ import { enforceScaleTones, parsePreferred } from "./rules/CandidateRules";
 
 export type LocalRule = (
     ctx: CounterpointContext, s: Score, v: CounterpointVoice, t: Rational
-) => string | null;
+) => number;
 
 export type GlobalRule = (
     ctx: CounterpointContext, s: Score
@@ -22,18 +22,23 @@ export class CounterpointContext {
     localRules: LocalRule[] = [];
     globalRules: GlobalRule[] = [];
     candidateRules: CandidateRule[] = [enforceScaleTones];
+
     advanceReward = 20;
+
+    similarMotionCost = 10;
+    obliqueMotionCost = 0;
+    contraryMotionCost = -10;
 
     harmonyIntervals = parsePreferred(
         ['m3', 0], ['M3', 0], ['m6', 0], ['M6', 0], ['P4', 10], ['P5', 20], ['P1', 50]);
 
     melodicIntervals = parsePreferred(
         ['m2',    0], ['M2',    0], ['-m2',  30], ['-M2',  30],
-        ['m3',   30], ['M3',   30], ['-m3',  30], ['-M3',  30],
-        ['P4',   40],               ['-P4',  40],
-        ['P5',   40],               ['-P5',  40],
-        ['m6',   50], ['M6',   50], ['-m6',  50], ['-M6',  50],
-        ['P8',   60],               ['-P8',  60],
+        ['m3',   50], ['M3',   50], ['-m3',  50], ['-M3',  50],
+        ['P4',   60],               ['-P4',  60],
+        ['P5',   60],               ['-P5',  60],
+        ['m6',   70], ['M6',   70], ['-m6',  70], ['-M6',  70],
+        ['P8',   80],               ['-P8',  80],
         ['P1',  100],
     );
 
@@ -70,8 +75,11 @@ export class CounterpointContext {
         return candidates.flatMap(([p, cost]) => {
             const m = create(p);
             const newScore = s.replaceMeasure(m.voiceIndex, m.index, m);
-            if (this.localRules.find(
-                (x) => x(this, newScore, voice, t) !== null)) return [];
+            for (const r of this.localRules) {
+                const c = r(this, newScore, voice, t);
+                if (c == Infinity) return [];
+                cost += c;
+            }
             return { measure: m, cost: cost + costOffset };
         });
     }

@@ -1,11 +1,11 @@
 import { Debug, Rational } from "common";
-import { H, Note, Score } from "./Common";
+import { H, TimedNote, Score } from "./Common";
 import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointVoice } from "./Basic";
-import { enforceHarmonyIntervals, makePassingTone } from "./rules/CandidateRules";
+import { enforceVerticalConsonanceStrict, enforceVerticalConsonanceWithMoving, makePassingTone } from "./rules/CandidateRules";
 
-export class HalfNoteMeasure extends CounterpointMeasure {
-    public readonly notes: Note[];
+export class SecondSpeciesMeasure extends CounterpointMeasure {
+    public readonly notes: TimedNote[];
     get writable() {
         return this.p1 === null;
     };
@@ -30,38 +30,44 @@ export class HalfNoteMeasure extends CounterpointMeasure {
                 isPassingTone
             }
         ];
+        Debug.assert(ctx.parameters.measureLength % 2 == 0);
     }
 
     hash(): string {
-        return `2half${this.hashNotes()}`;
+        return `sp2${this.hashNotes()}`;
     }
 
     getNextSteps(
-        cxt: CounterpointContext, s: Score
+        ctx: CounterpointContext, s: Score
     ): { measure: CounterpointMeasure; cost: number }[] {
         const t0 = new Rational(s.parameters.measureLength * this.index);
-        const t1 = t0.add(2);
+        const t1 = t0.add(ctx.parameters.measureLength / 2);
 
         if (this.p0 == null) {
             if (this.index == 0) // start first measure from the second beat
-                return cxt.fillIn([enforceHarmonyIntervals], s, this, t1, {},
-                    (p) => new HalfNoteMeasure(this.voiceIndex, this.index, this.ctx, null, p));
+                return ctx.fillIn([enforceVerticalConsonanceStrict], s, this, t1, {},
+                    (p) => new SecondSpeciesMeasure(this.voiceIndex, this.index, this.ctx, null, p));
             else
-                return cxt.fillIn([enforceHarmonyIntervals], s, this, t0, {},
-                (p) => new HalfNoteMeasure(this.voiceIndex, this.index, this.ctx, p, null));
+                return ctx.fillIn([enforceVerticalConsonanceStrict], s, this, t0, {},
+                (p) => new SecondSpeciesMeasure(this.voiceIndex, this.index, this.ctx, p, null));
         }
 
         if (this.p1 == null) {
             const next: { measure: CounterpointMeasure; cost: number }[] = [];
 
-            // non-passing tones
-            next.push(...cxt.fillIn([enforceHarmonyIntervals], s, this, t1, {},
-                (p) => new HalfNoteMeasure(this.voiceIndex, this.index, this.ctx, this.p0, p), 10));
-
             // passing tones
-            next.push(...cxt.fillIn([makePassingTone], s, this, t1, { isPassingTone: true },
-                (p) => new HalfNoteMeasure(
+            next.push(...ctx.fillIn(
+                [makePassingTone, enforceVerticalConsonanceWithMoving], s,
+                this, t1, { isPassingTone: true },
+                (p) => new SecondSpeciesMeasure(
                         this.voiceIndex, this.index, this.ctx, this.p0, p, true)));
+
+            // non-passing tones
+            next.push(...ctx.fillIn(
+                [enforceVerticalConsonanceStrict], s,
+                this, t1, {},
+                (p) => new SecondSpeciesMeasure(
+                    this.voiceIndex, this.index, this.ctx, this.p0, p)));
 
             return next;
         }
@@ -77,7 +83,7 @@ export class SecondSpecies extends CounterpointVoice {
 
     makeNewMeasure = (s: Score, iv: number, i: number) => {
         return [{
-            measure: new HalfNoteMeasure(iv, i, this.ctx),
+            measure: new SecondSpeciesMeasure(iv, i, this.ctx),
             cost: 0,
         }];
     };
