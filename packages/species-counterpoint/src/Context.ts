@@ -21,7 +21,7 @@ export type CandidateRule = (
 export class CounterpointContext {
     localRules: LocalRule[] = [];
     globalRules: GlobalRule[] = [];
-    candidateRules: CandidateRule[] = [enforceScaleTones];
+    candidateRules: CandidateRule[] = [];
 
     advanceReward = 20;
 
@@ -85,7 +85,6 @@ export class CounterpointContext {
     }
 
     constructor(
-        public readonly scale: H.Scale,
         public readonly targetMeasures: number,
         public readonly parameters: Parameters,
     ) {}

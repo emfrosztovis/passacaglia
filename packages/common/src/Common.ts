@@ -1,15 +1,24 @@
+/**
+ * Represents a hashable type. `passacaglia` uses a lot of immutable data types, and implementing `Hashable` enables them to be used in `HashMap`s.
+ */
 export interface Hashable {
     hash(): string;
 }
 
+/**
+ * A generic hash map, or a hash set if `V` is `void`.
+ */
 export class HashMap<P extends Hashable, V = void> {
     #map = new Map<string, [P, V]>();
 
-    constructor(it?: Iterable<[P, V]>) {
+    constructor(it?: Iterable<[...[P, V]]>) {
         if (it) for (const p of it)
-            this.add(...p);
+            this.set(...p);
     }
 
+    /**
+     * @returns the number of elements in the hash map.
+     */
     get size() {
         return this.#map.size;
     }
@@ -22,6 +31,9 @@ export class HashMap<P extends Hashable, V = void> {
         return new HashMap(this.entries());
     }
 
+    /**
+     * Filter the items based on a predicate. Will modify the hash map and return a reference to the same object.
+     */
     filter(pred: (p: P, v: V) => boolean): this {
         for (const [k, [p, v]] of this.#map.entries()) {
             if (!pred(p, v)) this.#map.delete(k);
@@ -29,6 +41,10 @@ export class HashMap<P extends Hashable, V = void> {
         return this;
     }
 
+    /**
+     * Intersect the entries with another hash map, keeping only keys that appear in both. Will modify the hash map and return a reference to the same object.
+     * @param combine A function to merge the values from both maps to form a value in the result.
+     */
     intersectWith(s: HashMap<P, V>, combine?: (a: V, b: V) => V): this {
         for (const [k, [p, v]] of this.#map.entries()) {
             if (!s.#map.has(k)) this.#map.delete(k);
@@ -38,6 +54,10 @@ export class HashMap<P extends Hashable, V = void> {
         return this;
     }
 
+    /**
+     * Union the entries with another hash map, adding any new keys and optionally combining values for existing keys. Will modify the hash map and return a reference to the same object.
+     * @param combine A function to merge the values from both maps to form a value in the result.
+     */
     unionWith(s: HashMap<P, V>, combine?: (a: V, b: V) => V): this {
         for (const [k, [p, v]] of s.#map) {
             if (combine && this.#map.has(k))
@@ -48,6 +68,9 @@ export class HashMap<P extends Hashable, V = void> {
         return this;
     }
 
+    /**
+     * Return a new HashMap containing elements that are present in either this map or the other map, but not in both. This operation returns a new map.
+     */
     difference(s: HashMap<P, V>) {
         const diff = new HashMap<P, V>();
         for (const [k, v] of this.#map)
@@ -57,18 +80,30 @@ export class HashMap<P extends Hashable, V = void> {
         return diff;
     }
 
-    add(p: P, v: V) {
+    /**
+     * Adds a new element with a specified key and value to the hash map. If an element with the same key already exists, the element will be updated.
+     */
+    set(p: P, v: V) {
         this.#map.set(p.hash(), [p, v]);
     }
 
+    /**
+     * @returns `true` if an element in the hash map existed and has been removed, or `false` if the element does not exist.
+     */
     delete(p: P) {
         return this.#map.delete(p.hash());
     }
 
+    /**
+     * @returns boolean indicating whether an element with the specified key exists or not.
+     */
     has(p: P) {
         return this.#map.has(p.hash());
     }
 
+    /**
+     * Returns an iterable of key-value pairs in the map.
+     */
     entries() {
         return this.#map.values();
     }

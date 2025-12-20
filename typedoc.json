@@ -1,0 +1,7 @@
+{
+    "entryPoints": ["packages/*"],
+    "name": "passacaglia",
+    "entryPointStrategy": "packages",
+    "includeVersion": false,
+    "skipErrorChecking": true
+}

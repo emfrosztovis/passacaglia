@@ -15,16 +15,16 @@ test('add, has, delete', () => {
     const p2 = new C('d4');
     const p3 = new C('c4'); // Same as p1
 
-    set.add(p1);
+    set.set(p1);
     expect(set.has(p1)).toBe(true);
     expect(set.has(p2)).toBe(false);
     expect(set.size).toBe(1);
 
-    set.add(p2);
+    set.set(p2);
     expect(set.has(p2)).toBe(true);
     expect(set.size).toBe(2);
 
-    set.add(p3); // Adding duplicate should not increase size
+    set.set(p3); // Adding duplicate should not increase size
     expect(set.size).toBe(2);
 
     set.delete(p1);
@@ -38,8 +38,8 @@ test('add, has, delete', () => {
 
 test('clone', () => {
     const set1 = new HashMap<C>();
-    set1.add(new C('c4'));
-    set1.add(new C('d4'));
+    set1.set(new C('c4'));
+    set1.set(new C('d4'));
 
     const set2 = set1.clone();
     expect(set2.size).toBe(set1.size);
@@ -54,14 +54,14 @@ test('clone', () => {
 
 test('intersectWith', () => {
     const set1 = new HashMap<C>();
-    set1.add(new C('c4'));
-    set1.add(new C('d4'));
-    set1.add(new C('e4'));
+    set1.set(new C('c4'));
+    set1.set(new C('d4'));
+    set1.set(new C('e4'));
 
     const set2 = new HashMap<C>();
-    set2.add(new C('d4'));
-    set2.add(new C('e4'));
-    set2.add(new C('f4'));
+    set2.set(new C('d4'));
+    set2.set(new C('e4'));
+    set2.set(new C('f4'));
 
     set1.intersectWith(set2);
     expect(set1.size).toBe(2);
@@ -73,12 +73,12 @@ test('intersectWith', () => {
 
 test('unionWith', () => {
     const set1 = new HashMap<C>();
-    set1.add(new C('c4'));
-    set1.add(new C('d4'));
+    set1.set(new C('c4'));
+    set1.set(new C('d4'));
 
     const set2 = new HashMap<C>();
-    set2.add(new C('d4'));
-    set2.add(new C('e4'));
+    set2.set(new C('d4'));
+    set2.set(new C('e4'));
 
     set1.unionWith(set2);
     expect(set1.size).toBe(3);

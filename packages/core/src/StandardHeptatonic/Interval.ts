@@ -132,9 +132,6 @@ export class _Interval extends Interval<StandardHeptatonicSystem> {
         const simpleSemitones = IntervalData[simpleSteps].find((x) => x[1] == quality)?.[0];
         if (simpleSemitones === undefined) return null;
 
-
-        Debug.info(octaves, simpleSteps);
-
         return new _Interval(steps, remainder.add(simpleSemitones + octaves * 12), sign);
     }
 

@@ -23,6 +23,10 @@ const CHarmonicMinor = _Scale.fromIntervals(_Pitch.parse('c0')!,
 
 const CCompleteMinor = _Scale.fromPitches(
     ['c', 'd', 'ef', 'f', 'g', 'af', 'a', 'bf', 'b'].map((x) => _Pitch.parse(x)!));
+const CAscendingMinor = _Scale.fromPitches(
+    ['c', 'd', 'ef', 'f', 'g', 'a', 'b'].map((x) => _Pitch.parse(x)!));
+const CDescendingMinor = _Scale.fromPitches(
+    ['c', 'd', 'ef', 'f', 'gf', 'af', 'b'].map((x) => _Pitch.parse(x)!));
 
 const C = {
     ionian     : CMajor,
@@ -55,13 +59,17 @@ const C = {
      * ````
      */
     completeMinor: CCompleteMinor,
+
+    ascendingMinor: CAscendingMinor,
+    descendingMinor: CDescendingMinor,
 };
 
 export const Scales = {
     C: C,
 
-    major      (root: _Pitch) { return CMajor.transposeTo(root); },
+    major        (root: _Pitch) { return CMajor.transposeTo(root); },
     harmonicMinor(root: _Pitch) { return CHarmonicMinor.transposeTo(root); },
+    completeMinor(root: _Pitch) { return CCompleteMinor.transposeTo(root); },
 
     ionian     (root: _Pitch) { return C.ionian.transposeTo(root); },
     dorian     (root: _Pitch) { return C.dorian.transposeTo(root); },
