@@ -1,5 +1,5 @@
 import { AsRational, Debug, Rational } from 'common';
-import { StandardHeptatonic as H } from 'core';
+import { Cursor, DurationalElement, StandardHeptatonic as H, SequentialContainer } from 'core';
 
 export { StandardHeptatonic as H } from 'core';
 export const P = H.Pitch;
@@ -8,125 +8,109 @@ export const I = H.Interval;
 export const S = H.Scale;
 export const Scales = H.Scales;
 
-export type NoteAttributes = {
-    isPassingTone?: boolean
-};
-
-export type Note = {
-    /**
-     * `null` means either it is not filled in, or it's a rest
-     */
-    pitch: H.Pitch | null,
-} & NoteAttributes;
-
-export type TimedNote = Note & {
-    position: Rational,
-    length: Rational,
-};
-
-export type GlobalNote = TimedNote & {
-    measureIndex: number,
-    voiceIndex: number,
-    globalPosition: Rational
-};
-
 export function parseNotes(...notes: [string, AsRational][]) {
-    const n: TimedNote[] = [];
-    let position = new Rational(0);
+    const n: Note[] = [];
     for (const [p, len] of notes) {
         const pitch = H.Pitch.parse(p);
-        const length = Rational.from(len);
+        const duration = Rational.from(len);
         Debug.assert(pitch !== null);
-        n.push({ pitch, position, length });
-        position = position.add(length);
+        n.push(new Note(duration, pitch));
     }
     return n;
 }
 
-export abstract class Measure {
+export type NoteAttributes = {
+    /**
+     * Whether the note is a passing tone.
+     */
+    isPassingTone?: boolean;
+    /**
+     * Whether the note is tied to the previous one.
+     */
+    isTied?: boolean;
+}
+
+export class Note implements DurationalElement {
+    duration: Rational;
+
+    /**
+     * `null` means either it is not filled in, or it's a rest
+     */
+    pitch: H.Pitch | null;
+    attrs: NoteAttributes;
+
+    constructor(d: Rational, p?: H.Pitch | null, attrs?: NoteAttributes) {
+        this.duration = d;
+        this.pitch = p ?? null;
+        this.attrs = attrs ?? {};
+    }
+}
+
+export type MeasureCursor = Cursor<Measure, Voice, never>;
+export type NoteCursor = Cursor<Note, Measure, MeasureCursor>;
+
+export abstract class Measure
+    extends SequentialContainer<Note>
+    implements DurationalElement
+{
     constructor(
-        public readonly voiceIndex: number,
-        public readonly index: number,
+        notes: readonly Note[],
+        public readonly duration: Rational,
     ) {
-        Debug.assert(voiceIndex >= 0);
-        Debug.assert(index >= 0);
+        super(notes);
     }
 
-    abstract readonly notes: TimedNote[];
     abstract readonly writable: boolean;
     abstract hash(): string;
 
     protected hashNotes(): string {
-        return this.notes.map((x) => {
-            const p = x.pitch ? x.pitch.ord().toString() : '#';
-            return `${p},${x.length},${x.position}`;
-        }).join();
-    }
-
-    notesBetween(t0: Rational, t1: Rational, inclusive = false): TimedNote[] {
-        return this.notes.filter((x) => {
-            const d0 = t0.sub(x.position.add(x.length));
-            const d1 = t1.sub(x.position);
-            if (d0.num >= 0) return false;
-            if (d1.num < 0 || (!inclusive && d1.num == 0)) return false;
-            return true;
-        });
-    }
-
-    noteAt(localT: Rational): TimedNote {
-        const found = this.notes.find((x) => {
-            const d = localT.sub(x.position);
-            if (d.num < 0) return false;
-            if (d.sub(x.length).num >= 0) return false;
-            return true;
-        });
-        Debug.assert(found !== undefined);
-        return found;
-    }
-
-    noteBefore(localT: Rational): TimedNote | null {
-        for (let i = this.notes.length-1; i >= 0; i--) {
-            const x = this.notes[i];
-            if (localT.sub(x.position).num > 0)
-                return x;
-        }
-        return null;
+        return this.elements.map((x) => {
+            const p = x.pitch ? x.pitch.ord().toString() : '_';
+            return `${p},${x.duration}`;
+        }).join(';');
     }
 
     toString(): string {
-        return this.notes.map((x) => `${x.pitch}${x.isPassingTone ? '!' : ''}`).join(' ');
+        return this.elements.map((x) => `${x.pitch}${x.attrs.isPassingTone ? '!' : ''}`).join(' ');
     }
 }
 
-export abstract class Voice {
+export abstract class Voice<M extends Measure = Measure> extends SequentialContainer<M> {
     constructor(
+        measures: readonly M[],
         public readonly index: number,
     ) {
-        Debug.assert(index >= 0);
+        super(measures);
     }
 
-    abstract measures: Measure[];
     abstract readonly name: string;
-
     abstract clone(): this;
 
+    noteAt(t: AsRational) {
+        t = Rational.from(t);
+        const m = this.cursorAtTime(t);
+        if (!m) return undefined;
+        // @ts-expect-error compiler bug?
+        return m.value.cursorAtTime(t.sub(m.globalTime))?.withParent(m);
+    }
+
     hash(): string {
-        return this.measures.map((x) => x.hash()).join(';');
+        return this.elements.map((x) => x.hash()).join(';');
     }
 
     toString(): string {
-        return this.measures.map((x) => x.toString()).join(' | ');
+        return this.elements.map((x) => x.toString()).join(' | ');
     }
 }
 
 export type Parameters = {
-    measureLength: number;
+    measureLength: Rational;
 };
 
 export class Score {
     constructor(
         public readonly parameters: Parameters,
-        public readonly voices: Voice[]
+        public readonly voices: readonly Voice[]
     ) {}
 
     hash(): string {
@@ -137,78 +121,10 @@ export class Score {
         return this.voices.map((x) => x.toString()).join('\n');
     }
 
-    replaceMeasure(iv: number, i: number, measure: Measure) {
-        const newScore = this.clone();
-        newScore.voices[iv].measures[i] = measure;
-        return newScore;
-    }
-
-    measureAt(t: AsRational, iv: number) {
-        t = Rational.from(t);
-        Debug.assert(iv >= 0 && iv < this.voices.length);
-        const i = Math.floor(t.div(this.parameters.measureLength).value());
-        const v = this.voices[iv];
-        if (i >= v.measures.length) return null;
-        return v.measures[i];
-    }
-
-    noteBetween(t0: AsRational, t1: AsRational, iv: number, inclusive = false): GlobalNote[] {
-        t0 = Rational.from(t0);
-        t1 = Rational.from(t1);
-        const i0 = t0.div(this.parameters.measureLength).value();
-        const i1 = t1.div(this.parameters.measureLength).value();
-        const v = this.voices[iv];
-        const notes: GlobalNote[] = [];
-        for (let i = Math.floor(i0); (inclusive ? i <= i1 : i < i1); i++) {
-            if (i >= v.measures.length) break;
-            const offset = i * this.parameters.measureLength;
-            const m = v.measures[i];
-            notes.push(...m.notesBetween(t0.sub(offset), t1.sub(offset), inclusive)
-                .map((n) => ({ ...n,
-                    globalPosition: n.position.add(offset),
-                    voiceIndex: m.voiceIndex,
-                    measureIndex: m.index
-                })));
-        }
-        return notes;
-    }
-
-    noteAt(t: AsRational, iv: number): GlobalNote | null {
-        t = Rational.from(t);
-        const m = this.measureAt(t, iv);
-        if (!m) return m;
-        const n = m.noteAt(t.modulo(this.parameters.measureLength));
-        return { ...n,
-            globalPosition: n.position.add(m.index * this.parameters.measureLength),
-            voiceIndex: m.voiceIndex,
-            measureIndex: m.index
-        };
-    }
-
-    noteBefore(t: AsRational, iv: number): GlobalNote | null {
-        t = Rational.from(t);
-        Debug.assert(iv >= 0 && iv < this.voices.length);
-        const i = Math.floor(t.div(this.parameters.measureLength).value());
-        const v = this.voices[iv];
-        if (i >= v.measures.length || i < 0) return null;
-
-        const m = v.measures[i];
-        const n = m.noteBefore(t.modulo(this.parameters.measureLength))
-        if (n) return { ...n,
-            globalPosition: n.position.add(m.index * this.parameters.measureLength),
-            voiceIndex: m.voiceIndex,
-            measureIndex: m.index
-        };
-
-        // return last note from the previous measure
-        if (i == 0) return null;
-        const m2 = v.measures[i-1];
-        const n2 = m2.notes.at(-1)!;
-        return { ...n2,
-            globalPosition: n2.position.add(m2.index * this.parameters.measureLength),
-            voiceIndex: m2.voiceIndex,
-            measureIndex: m2.index
-        };
+    replaceVoice(i: number, v: Voice) {
+        const vs = [...this.voices];
+        vs.splice(i, 1, v);
+        return new Score(this.parameters, vs);
     }
 
     clone() {

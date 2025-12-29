@@ -1,12 +1,12 @@
 import { Debug, Rational } from "common";
 import { aStar, AStarNode } from "./AStar";
-import { Score, H, Parameters, NoteAttributes } from "./Common";
-import { CounterpointMeasure, CounterpointVoice } from "./Basic";
+import { Score, H, Parameters, NoteAttributes, MeasureCursor } from "./Common";
+import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice } from "./Basic";
 import { HashMap } from "common";
 import { enforceScaleTones, parsePreferred } from "./rules/CandidateRules";
 
 export type LocalRule = (
-    ctx: CounterpointContext, s: Score, v: CounterpointVoice, t: Rational
+    ctx: CounterpointContext, s: Score, current: CounterpointNoteCursor
 ) => number;
 
 export type GlobalRule = (
@@ -14,7 +14,7 @@ export type GlobalRule = (
 ) => string | null;
 
 export type CandidateRule = (
-    ctx: CounterpointContext, s: Score, v: CounterpointVoice, t: Rational,
+    ctx: CounterpointContext, s: Score, current: CounterpointNoteCursor,
     candidates: HashMap<H.Pitch, number> | null, attr: NoteAttributes
 ) => HashMap<H.Pitch, number>;
 
@@ -49,12 +49,12 @@ export class CounterpointContext {
     allowUnison = false;
 
     getCandidates(
-        rules: CandidateRule[], s: Score, v: CounterpointVoice, t: Rational,
+        rules: CandidateRule[], s: Score, current: CounterpointNoteCursor,
         attr: NoteAttributes
     ) {
         let candidates: HashMap<H.Pitch, number> | null = null;
         for (const r of [...this.candidateRules, ...rules]) {
-            candidates = r(this, s, v, t, candidates, attr);
+            candidates = r(this, s, current, candidates, attr);
             if (candidates.size == 0) return candidates;
         }
         Debug.assert(candidates !== null);
@@ -63,20 +63,23 @@ export class CounterpointContext {
 
     fillIn(
         rules: CandidateRule[],
-        s: Score, m: CounterpointMeasure, t: Rational,
+        s: Score, note: CounterpointNoteCursor,
         attr: NoteAttributes,
         create: (p: H.Pitch) => CounterpointMeasure,
         costOffset = 0,
     ) {
-        const voice = s.voices[m.voiceIndex];
-        Debug.assert(voice instanceof CounterpointVoice);
-        const candidates = [...this.getCandidates(rules, s, voice, t, attr).entries()];
+        const measure = note.parent;
+        const voice = measure.container;
+        const candidates = [...this.getCandidates(rules, s, note, attr).entries()];
 
         return candidates.flatMap(([p, cost]) => {
             const m = create(p);
-            const newScore = s.replaceMeasure(m.voiceIndex, m.index, m);
-            for (const r of this.localRules) {
-                const c = r(this, newScore, voice, t);
+            const newVoice = voice.replaceMeasure(measure.index, m);
+            const newScore = s.replaceVoice(voice.index, newVoice);
+            const newCursor = newVoice.noteAt(note.globalTime) as CounterpointNoteCursor;
+            Debug.assert(newCursor !== undefined);
+            for (const rule of this.localRules) {
+                const c = rule(this, newScore, newCursor);
                 if (c == Infinity) return [];
                 cost += c;
             }
@@ -96,14 +99,14 @@ export class CounterpointContext {
         class Node implements AStarNode {
             readonly isGoal: boolean;
             #hash: string;
-            #writables: CounterpointMeasure[];
+            #writables: CounterpointMeasureCursor[];
 
             #findWritable() {
                 for (let i = 0; i < this.score.voices.length; i++) {
                     const v = this.score.voices[i];
                     if (!(v instanceof CounterpointVoice)) continue;
-                    const m = v.measures[this.measureIndex];
-                    if (!m || !m.writable) continue;
+                    const m = v.at(this.measureIndex);
+                    if (!m || !m.value.writable) continue;
                     this.#writables.push(m);
                 }
             }
@@ -131,19 +134,27 @@ export class CounterpointContext {
 
             getNeighbors(): { node: AStarNode; cost: number; }[] {
                 return this.#writables.flatMap((x) => {
-                    const nexts = x.getNextSteps(ctx, this.score);
-                    return nexts.flatMap(({ measure, cost }) => {
-                        const newScore = this.score.replaceMeasure(
-                            x.voiceIndex, this.measureIndex, measure);
+                    const voice = x.container;
+                    const nexts = x.value.getNextSteps(this.score, x);
+                    // const debug: [number, string][] = [];
+                    const result = nexts.flatMap(({ measure, cost }) => {
+                        const newVoice = voice.replaceMeasure(x.index, measure);
+                        const newScore = this.score.replaceVoice(voice.index, newVoice);
 
                         if (ctx.globalRules.find((x) => x(ctx, newScore) !== null))
                             return [];
-                        else return {
-                            node: new Node(newScore,
-                                this.measureIndex, this.hCost - ctx.advanceReward),
-                            cost
-                        };
-                    })
+                        else {
+                            // debug.push([cost, measure.hash()]);
+                            return {
+                                node: new Node(newScore,
+                                    this.measureIndex, this.hCost - ctx.advanceReward),
+                                cost
+                            };
+                        }
+                    });
+                    // Debug.trace(voice.name, '[', x.index, ']:', x.value.hash(), '->',
+                    //     debug.sort((a, b) => a[0] - b[0]));
+                    return result;
                 });
             }
 

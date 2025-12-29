@@ -1,37 +1,40 @@
 import { Rational } from "common";
-import { H, Measure, TimedNote, Score, Voice } from "./Common";
+import { H, Measure, Note, Score, Voice } from "./Common";
 import { CounterpointContext } from "./Context";
+import { Cursor, SequentialCursor } from "core";
+
+export type CounterpointMeasureCursor = SequentialCursor<CounterpointMeasure, CounterpointVoice, never>;
+// @ts-expect-error typechecker bug?
+export type CounterpointNoteCursor = SequentialCursor<Note, CounterpointMeasure, CounterpointMeasureCursor>;
 
 export abstract class CounterpointMeasure extends Measure {
     constructor(
-        voiceIndex: number, index: number,
+        notes: Note[],
         protected ctx: CounterpointContext,
     ) {
-        super(voiceIndex, index);
+        super(notes, ctx.parameters.measureLength);
     }
 
-    abstract getNextSteps(ctx: CounterpointContext, s: Score): {
+    atWithParent(i: number, c: CounterpointMeasureCursor): CounterpointNoteCursor {
+        // @ts-expect-error
+        return this.at(i)!.withParent(c);
+    }
+
+    abstract getNextSteps(s: Score, c: CounterpointMeasureCursor): {
         measure: CounterpointMeasure,
         cost: number
     }[];
 }
 
 export class BlankMeasure extends CounterpointMeasure {
-    readonly notes: TimedNote[];
     readonly writable = true;
 
-    constructor(voiceIndex: number, index: number, ctx: CounterpointContext) {
-        super(voiceIndex, index, ctx);
-        this.notes = [{
-            pitch: null,
-            length: Rational.from(ctx.parameters.measureLength),
-            position: new Rational(0)
-        }];
+    constructor(ctx: CounterpointContext) {
+        super([new Note(ctx.parameters.measureLength, undefined)], ctx);
     }
 
-    getNextSteps(_cxt: CounterpointContext, s: Score) {
-        return (s.voices[this.voiceIndex] as CounterpointVoice)
-            .makeNewMeasure(s, this.voiceIndex, this.index);
+    getNextSteps(s: Score, c: CounterpointMeasureCursor) {
+        return c.container.makeNewMeasure(s);
     }
 
     hash(): string {
@@ -43,10 +46,10 @@ export class FixedMeasure extends Measure {
     readonly writable = false;
 
     constructor(
-        voiceIndex: number, index: number,
-        public readonly notes: TimedNote[]
+        notes: Note[],
+        protected ctx: CounterpointContext,
     ) {
-        super(voiceIndex, index);
+        super(notes, ctx.parameters.measureLength);
     }
 
     hash(): string {
@@ -56,11 +59,11 @@ export class FixedMeasure extends Measure {
 
 export class FixedVoice extends Voice {
     constructor(
-        index: number,
+        i: number,
         public readonly measures: FixedMeasure[],
         public readonly name = 'Cantus'
     ) {
-        super(index);
+        super(measures, i);
     }
 
     clone(): this {
@@ -69,7 +72,7 @@ export class FixedVoice extends Voice {
 }
 
 export type VoiceConstructor = new (
-    index: number,
+    i: number,
     ctx: CounterpointContext,
     measures: CounterpointMeasure[],
     lowerRange: H.Pitch,
@@ -77,24 +80,26 @@ export type VoiceConstructor = new (
     name: string
 ) => CounterpointVoice;
 
-export abstract class CounterpointVoice extends Voice {
+export abstract class CounterpointVoice extends Voice<CounterpointMeasure> {
     constructor(
-        index: number,
+        i: number,
         protected readonly ctx: CounterpointContext,
-        public readonly measures: CounterpointMeasure[],
+        measures: CounterpointMeasure[],
         public readonly lowerRange: H.Pitch,
         public readonly higherRange: H.Pitch,
         public readonly name: string
     ) {
-        super(index);
+        super(measures, i);
     }
 
     abstract clone(): this;
 
-    abstract makeNewMeasure: (s: Score, iv: number, i: number) => {
+    abstract makeNewMeasure: (s: Score) => {
         measure: CounterpointMeasure,
         cost: number
     }[];
+
+    abstract replaceMeasure(i: number, m: CounterpointMeasure): this;
 }
 
 export class CounterpointScoreBuilder {
@@ -109,19 +114,17 @@ export class CounterpointScoreBuilder {
     }
 
     voice(v: VoiceConstructor, name: string, l: H.Pitch, h: H.Pitch): this {
-        const vi = this.#voices.length;
         const ms: BlankMeasure[] = [];
         for (let i = 0; i < this.ctx.targetMeasures; i++)
-            ms.push(new BlankMeasure(vi, i, this.ctx));
+            ms.push(new BlankMeasure(this.ctx));
 
-        this.#voices.push(new v(vi, this.ctx, ms, l, h, name));
+        this.#voices.push(new v(this.#voices.length, this.ctx, ms, l, h, name));
         return this;
     }
 
-    cantus(measures: TimedNote[][]): this {
-        const vi = this.#voices.length;
-        const ms = measures.map((x, i) => new FixedMeasure(vi, i, x));
-        this.#voices.push(new FixedVoice(vi, ms));
+    cantus(measures: Note[][]): this {
+        const ms = measures.map((x) => new FixedMeasure(x, this.ctx));
+        this.#voices.push(new FixedVoice(this.#voices.length, ms));
         return this;
     }
 

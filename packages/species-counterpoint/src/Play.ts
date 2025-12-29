@@ -22,7 +22,7 @@ export async function play(s: Score, instrs: number[], tempo = 180) {
     let i = 0;
     while (true) {
         const measures = s.voices.flatMap((x) => {
-            const m = x.measures[i];
+            const m = x.at(i);
             return m ? [m] : [];
         });
         if (measures.length == 0) break;
@@ -31,16 +31,16 @@ export async function play(s: Score, instrs: number[], tempo = 180) {
         // play these measures
         const events: Event[] = [];
         for (const m of measures) {
-            for (const n of m.notes) {
-                if (n.pitch === null) continue;
+            for (const n of m.value.entries()) {
+                if (n.value.pitch === null) continue;
                 events.push({
-                    type: 'on', pitch: n.pitch.toMidi().value(),
-                    channel: m.voiceIndex,
-                    at: n.position.value()
+                    type: 'on', pitch: n.value.pitch.toMidi().value(),
+                    channel: m.container.index,
+                    at: n.time.value()
                 }, {
-                    type: 'off', pitch: n.pitch.toMidi().value(),
-                    channel: m.voiceIndex,
-                    at: n.position.add(n.length).value()
+                    type: 'off', pitch: n.value.pitch.toMidi().value(),
+                    channel: m.container.index,
+                    at: n.time.add(n.duration).value()
                 });
             }
         }

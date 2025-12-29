@@ -4,28 +4,10 @@ import { CandidateRule } from "../Context";
 import { HashMap } from "common";
 
 export const enforceScaleTones: (scale: H.Scale) => CandidateRule =
-(scale) => (ctx, _s, v, _t, c) => {
+(scale) => (_ctx, _s, cur, c) => {
+    const v = cur.parent.container;
     const scaleTones = new HashMap<H.Pitch, number>(
         scale.getDegreesInRange(v.lowerRange, v.higherRange).map((x) => [x.toPitch(), 0]));
-    if (!c) return scaleTones;
-    return c.intersectWith(scaleTones);
-}
-
-export const enforceScaleTonesDirectional: (upward: H.Scale, downward: H.Scale) => CandidateRule =
-(upward, downward) => (_ctx, s, v, t, c) => {
-    const scaleTones = new HashMap<H.Pitch, number>();
-
-    const prev = s.noteBefore(t, v.index)?.pitch;
-    if (!prev) {
-        for (const p of upward.getDegreesInRange(v.lowerRange, v.higherRange))
-            scaleTones.set(p.toPitch(), 0);
-    } else {
-        for (const p of upward.getDegreesInRange(prev, v.higherRange))
-            scaleTones.set(p.toPitch(), 0);
-        for (const p of downward.getDegreesInRange(v.lowerRange, prev))
-            scaleTones.set(p.toPitch(), 0);
-    }
-
     if (!c) return scaleTones;
     return c.intersectWith(scaleTones);
 }
@@ -60,57 +42,27 @@ export const DegreeMatrixPreset = {
             } ]
         ]),
     } satisfies DegreeMatrix,
-    minor: {
-        upward: new HashMap([
-            [ Scales.C.completeMinor.at(5), {
-                next: parsePreferred(['A1', Infinity], ['-m2', Infinity]),
-            } ],
-            [ Scales.C.completeMinor.at(6), {
-                next: parsePreferred(['m2', Infinity], ['-A1', Infinity], ['-M2', Infinity]),
-            } ],
-            [ Scales.C.completeMinor.at(7), {
-                next: parsePreferred(['m2', Infinity], ['M2', Infinity], ['-m2', Infinity]),
-            } ],
-            [ Scales.C.completeMinor.at(8), {
-                next: parsePreferred(['-m2', Infinity], ['-M2', Infinity]),
-            } ],
-        ]),
-        downward: new HashMap([
-            [ Scales.C.completeMinor.at(5), {
-                next: parsePreferred(['A1', Infinity], ['-m2', Infinity]),
-            } ],
-            [ Scales.C.completeMinor.at(6), {
-                next: parsePreferred(['m2', Infinity], ['-A1', Infinity], ['-M2', Infinity]),
-            } ],
-            [ Scales.C.completeMinor.at(7), {
-                next: parsePreferred(['m2', Infinity], ['M2', Infinity], ['-m2', Infinity]),
-            } ],
-            [ Scales.C.completeMinor.at(8), {
-                next: parsePreferred(['-m2', Infinity], ['-M2', Infinity]),
-            } ],
-        ]),
-    } satisfies DegreeMatrix,
 }
 
 export const enforceDirectionalDegreeMatrix: (scale: H.Scale, m: DegreeMatrix) => CandidateRule =
-(scale, m) => (ctx, s, v, t, c) => {
+(scale, m) => (ctx, s, cur, c) => {
     Debug.assert(c !== null);
-    const prev = s.noteBefore(t, v.index);
-    if (!prev?.pitch) return c;
+    const prev = cur.prev();
+    if (!prev?.value.pitch) return c;
 
-    const prev2 = s.noteBefore(prev.globalPosition, v.index);
-    if (!prev2?.pitch) return c;
+    const prev2 = prev.prev();
+    if (!prev2?.value.pitch) return c;
 
-    const sign = Math.sign(prev2.pitch.distanceTo(prev.pitch).value());
+    const sign = Math.sign(prev2.value.pitch.distanceTo(prev.value.pitch).value());
     if (sign == 0) return c; // well, should search instead
     const map = sign > 0 ? m.upward : m.downward;
 
-    const deg = scale.getExactDegree(prev.pitch);
+    const deg = scale.getExactDegree(prev.value.pitch);
     if (!deg || !map.has(deg)) return c;
     const pref = map.get(deg)!;
 
     const nextMap = new HashMap([...pref.next.entries()]
-        .map(([x, c]) => [prev.pitch!.add(x), c]));
+        .map(([x, c]) => [prev.value.pitch!.add(x), c]));
 
     for (const [p, cost] of nextMap.entries()) {
         const oldCost = c.get(p);
@@ -123,18 +75,19 @@ export const enforceDirectionalDegreeMatrix: (scale: H.Scale, m: DegreeMatrix) =
 }
 
 export const enforceMinor: (root: H.Pitch) => CandidateRule =
-(root) => (_ctx, s, v, t, c) => {
+(root) => (_ctx, s, cur, c) => {
+    const v = cur.parent.container;
     const scale = H.Scales.completeMinor(root);
     const scaleTones = new HashMap<H.Pitch, number>(
         scale.getDegreesInRange(v.lowerRange, v.higherRange).map((x) => [x.toPitch(), 0]));
     if (c === null) c = scaleTones;
 
-    const n1 = s.noteBefore(t, v.index);
+    const n1 = cur.value;
     if (!n1?.pitch) return scaleTones;
     const d1 = scale.getExactDegree(n1.pitch);
     if (!d1) return scaleTones;
 
-    const n0 = s.noteBefore(n1.globalPosition, v.index);
+    const n0 = cur.prevGlobal()?.value;
     if (!n0?.pitch) return scaleTones;
     const d0 = scale.getExactDegree(n0.pitch);
     if (!d0) return scaleTones;
@@ -156,29 +109,28 @@ export const enforceMinor: (root: H.Pitch) => CandidateRule =
     return c;
 }
 
-export const enforcePassingTones: CandidateRule = (_ctx, s, v, t, c) => {
+export const enforcePassingTones: CandidateRule = (_ctx, _s, cur, c) => {
     Debug.assert(c !== null);
-    const prev = s.noteBefore(t, v.index);
-    if (!prev?.pitch || !prev?.isPassingTone) return c;
+    const p1 = cur.prevGlobal();
+    const prev = p1?.value;
+    if (!prev?.pitch || !prev.attrs.isPassingTone) return c;
 
-    const prev2 = s.noteBefore(prev.globalPosition, v.index);
+    const p2 = p1!.prevGlobal();
+    const prev2 = p2?.value;
     Debug.assert(!!(prev2?.pitch));
 
     const o2 = prev2.pitch.ord().value();
     const o1 = prev.pitch.ord().value();
 
-    return c.filter((p) => {
-        if (Math.sign(o1 - p.ord().value()) != Math.sign(o2 - o1)) return false;
-        if (Math.abs(prev.pitch!.stepsTo(p)) <= 1) {
-            return true;
-        }
-        return false;
-    });
+    return c.filter((p) =>
+        Math.sign(o1 - p.ord().value()) == Math.sign(o2 - o1)
+     && Math.abs(prev.pitch!.stepsTo(p)) <= 1);
 }
 
-export const makePassingTone: CandidateRule = (_ctx, s, v, t, c) => {
+export const makePassingTone: CandidateRule = (_ctx, _s, cur, c) => {
     Debug.assert(c !== null);
-    const prev = s.noteBefore(t, v.index);
+    const p1 = cur.prevGlobal();
+    const prev = p1?.value;
     if (!prev?.pitch) return c;
 
     return c.filter((p) => {
@@ -197,20 +149,20 @@ export function parsePreferred(...ps: readonly [ex: string, cost: number][]): Pr
     }));
 }
 
-export const enforceMelodyIntervals: CandidateRule = (ctx, s, v, t, c, attr) =>
+export const enforceMelodyIntervals: CandidateRule = (ctx, s, cur, c, attr) =>
 {
     Debug.assert(c !== null);
     if (attr.isPassingTone && ctx.allowChromaticPassingTones)
         return c;
 
-    const prev = s.noteBefore(t, v.index);
+    const p1 = cur.prevGlobal();
+    const prev = p1?.value;
     if (!prev?.pitch) return c;
 
-    const prev2 = s.noteBefore(prev.globalPosition, v.index);
-    let sign = 1;
-    if (prev2?.pitch && prev2.pitch.ord() > prev.pitch.ord())
-        sign = -1;
+    const p2 = p1!.prevGlobal();
+    const prev2 = p2?.value;
 
+    const sign = (prev2?.pitch && prev2.pitch.ord() > prev.pitch.ord()) ? -1 : 1;
     const nexts = new HashMap<H.Pitch, number>(
         [...ctx.melodicIntervals.entries()].map(([x, cost]) =>
             [prev.pitch!.add(x.withSign((x.sign * sign) as -1 | 1)), cost])
@@ -223,20 +175,22 @@ export const enforceMelodyIntervals: CandidateRule = (ctx, s, v, t, c, attr) =>
  * Enforces that the candidates form consonance with voices that are moving at the same point.
  */
 export const enforceVerticalConsonanceWithMoving: CandidateRule
-    = (ctx, s, v, t, c) =>
+    = (ctx, s, cur, c) =>
 {
     Debug.assert(c !== null);
     const otherPitches: H.Pitch[] = [];
 
-    for (let i = 0; i < s.voices.length; i++) {
-        if (i == v.index) continue;
-        const n = s.noteAt(t, i);
-        if (!n?.pitch) continue;
+    const t = cur.globalTime;
+    const v = cur.parent.container;
+    for (const voice of s.voices) {
+        if (voice == v) continue;
+        const n = voice.noteAt(t);
+        if (!n || !n.value.pitch) continue;
 
-        const prev = s.noteBefore(t, i);
-        if (!prev?.pitch || prev.pitch !== n.pitch) {
+        const prev = n.prev();
+        if (!prev || prev.value.pitch !== n.value.pitch) {
             // moving
-            otherPitches.push(n.pitch);
+            otherPitches.push(n.value.pitch);
         }
     }
 
@@ -261,19 +215,23 @@ export const enforceVerticalConsonanceWithMoving: CandidateRule
  * Enforces that the candidates form consonance with all other voices.
  */
 export const enforceVerticalConsonanceStrict: CandidateRule
-    = (ctx, s, v, t, c) =>
+    = (ctx, s, cur, c) =>
 {
     Debug.assert(c !== null);
     const otherPitches: H.Pitch[] = [];
 
     let bassPitch: H.Pitch | null = null;
-    for (let i = 0; i < s.voices.length; i++) {
-        if (i == v.index) continue;
-        const n = s.noteAt(t, i);
-        if (!n?.pitch) continue;
-        otherPitches.push(n.pitch);
-        if (i == s.voices.length - 1)
-            bassPitch = n.pitch;
+    const t = cur.globalTime;
+    const v = cur.parent.container;
+    const lastVoice = s.voices.at(-1);
+    for (const voice of s.voices) {
+        if (voice == v) continue;
+        const n = voice.noteAt(t);
+        if (!n || !n.value.pitch) continue;
+
+        otherPitches.push(n.value.pitch);
+        if (voice == lastVoice)
+            bassPitch = n.value.pitch;
     }
 
     outer: for (const [p, cost] of c.entries()) {
@@ -288,7 +246,7 @@ export const enforceVerticalConsonanceStrict: CandidateRule
             }
             newCost += c2 / otherPitches.length;
 
-            if (v.index == s.voices.length - 1
+            if (v == lastVoice
              && ctx.forbidWithBass.find((f) => f.equals(int)))
             {
                 c.delete(p);

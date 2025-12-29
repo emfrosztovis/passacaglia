@@ -1,18 +1,18 @@
-import { Debug, HashMap, LogLevel } from "common";
+import { Debug, LogLevel, Rational } from "common";
 import { CounterpointScoreBuilder } from "./Basic";
-import { H, parseNotes, PC, Scales } from "./Common";
+import { H, parseNotes } from "./Common";
 import { forbidPerfectsBySimilarMotion, forbidVoiceOverlapping, prioritizeVoiceMotion } from "./rules/VerticalRules";
-import { DegreeMatrix, DegreeMatrixPreset, enforceDirectionalDegreeMatrix, enforceMelodyIntervals, enforceMinor, enforcePassingTones, enforceScaleTones, enforceScaleTonesDirectional, parsePreferred } from "./rules/CandidateRules";
-import { SecondSpecies } from "./Species2";
+import { DegreeMatrixPreset, enforceDirectionalDegreeMatrix, enforceMelodyIntervals, enforceMinor, enforcePassingTones, enforceScaleTones } from "./rules/CandidateRules";
 import { CounterpointContext } from "./Context";
-import { FirstSpecies } from "./Species1";
 import { play } from "./Play";
 import { ThirdSpecies } from "./Species3";
+import { FirstSpecies } from "./Species1";
+import { SecondSpecies } from "./Species2";
 
 export const ctx = new CounterpointContext(
-    14, // targetMeasures
+    8, // targetMeasures
     {
-        measureLength: 4
+        measureLength: new Rational(4)
     }
 );
 
@@ -46,15 +46,20 @@ ctx.localRules = [
 
 ctx.candidateRules = [
     enforceMinor(H.Pitch.parse('c')!),
+    // enforceScaleTones(H.Scales.C.major),
+    // enforceScaleTones(H.Scales.C.chromatic),
     enforcePassingTones,
     enforceMelodyIntervals,
+    enforceDirectionalDegreeMatrix(H.Scales.C.major, DegreeMatrixPreset.major),
 ];
 
-ctx.advanceReward = 20;
+ctx.advanceReward = 30;
+
+ctx.allowUnison = false;
 
 const score = new CounterpointScoreBuilder(ctx)
-    .soprano(ThirdSpecies)
-    // .alto(SecondSpecies)
+    .soprano(FirstSpecies)
+    .alto(SecondSpecies)
     // .tenor(SecondSpecies)
     // .tenor(FirstSpecies)
     .cantus([
@@ -66,16 +71,8 @@ const score = new CounterpointScoreBuilder(ctx)
         parseNotes(['d3', ctx.parameters.measureLength]),
         parseNotes(['b2', ctx.parameters.measureLength]),
         parseNotes(['c3', ctx.parameters.measureLength]),
-        parseNotes(['d3', ctx.parameters.measureLength]),
-        parseNotes(['ef3', ctx.parameters.measureLength]),
-        parseNotes(['g3', ctx.parameters.measureLength]),
-        parseNotes(['f3', ctx.parameters.measureLength]),
-        parseNotes(['d3', ctx.parameters.measureLength]),
-        parseNotes(['b2', ctx.parameters.measureLength]),
     ])
     .build();
-
-ctx.allowUnison = false;
 
 // const score = new CounterpointScoreBuilder(ctx)
 //     .cantus([
@@ -104,4 +101,4 @@ Debug.level = LogLevel.Trace;
 const result = ctx.solve(score);
 console.log(result?.toString());
 if (result)
-    await play(result, [72, 72, 72, 72], 82);
+    await play(result, [72, 72, 72, 72], 180);
