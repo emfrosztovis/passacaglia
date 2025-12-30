@@ -4,7 +4,8 @@ import { CounterpointContext } from "./Context";
 import { Cursor, SequentialCursor } from "core";
 
 export type CounterpointMeasureCursor = SequentialCursor<CounterpointMeasure, CounterpointVoice, never>;
-// @ts-expect-error typechecker bug?
+// FIXME: typechecker bug?
+// @ts-expect-error
 export type CounterpointNoteCursor = SequentialCursor<Note, CounterpointMeasure, CounterpointMeasureCursor>;
 
 export abstract class CounterpointMeasure extends Measure {
@@ -16,6 +17,7 @@ export abstract class CounterpointMeasure extends Measure {
     }
 
     atWithParent(i: number, c: CounterpointMeasureCursor): CounterpointNoteCursor {
+        // FIXME: withParent
         // @ts-expect-error
         return this.at(i)!.withParent(c);
     }

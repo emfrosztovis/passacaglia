@@ -90,7 +90,8 @@ export abstract class Voice<M extends Measure = Measure> extends SequentialConta
         t = Rational.from(t);
         const m = this.cursorAtTime(t);
         if (!m) return undefined;
-        // @ts-expect-error compiler bug?
+        // FIXME: withParent
+        // @ts-expect-error
         return m.value.cursorAtTime(t.sub(m.globalTime))?.withParent(m);
     }
 

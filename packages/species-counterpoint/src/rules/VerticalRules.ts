@@ -4,7 +4,7 @@ import { LocalRule } from "../Context";
 export const forbidVoiceOverlapping: LocalRule = (ctx, s, cur) => {
     if (!cur.value.pitch) return 0;
     const end = cur.globalEndTime.value();
-    const ord = cur.value.pitch.ord();
+    const ord = cur.value.pitch.ord().value();
 
     const iv = cur.parent.container.index;
     if (iv > 0) {
@@ -13,7 +13,7 @@ export const forbidVoiceOverlapping: LocalRule = (ctx, s, cur) => {
              cur2 && cur2.globalTime.value() < end;
              cur2 = cur2.nextGlobal())
         {
-            const nord = cur2.value.pitch?.ord();
+            const nord = cur2.value.pitch?.ord().value();
             if (!nord) continue;
             if (nord < ord || (!ctx.allowUnison && nord == ord))
                 return Infinity;
@@ -25,7 +25,7 @@ export const forbidVoiceOverlapping: LocalRule = (ctx, s, cur) => {
              cur2 && cur2.globalTime.value() < end;
              cur2 = cur2.nextGlobal())
         {
-            const nord = cur2.value.pitch?.ord();
+            const nord = cur2.value.pitch?.ord().value();
             if (!nord) continue;
             if (nord > ord || (!ctx.allowUnison && nord == ord))
                 return Infinity;

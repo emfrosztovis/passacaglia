@@ -24,7 +24,7 @@ class ThirdSpeciesMeasure extends CounterpointMeasure {
     getNextSteps(
         s: Score, c: CounterpointMeasureCursor
     ): { measure: CounterpointMeasure; cost: number }[] {
-
+        // FIXME: withParent
         // @ts-expect-error
         const ci: CounterpointNoteCursor = this.find((x) => x.value.pitch === null)?.withParent(c);
         const next: { measure: CounterpointMeasure; cost: number }[] = [];

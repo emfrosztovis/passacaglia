@@ -34,7 +34,7 @@ class SecondSpeciesMeasure extends CounterpointMeasure {
             if (c.index == 0) {
                 // start first measure from the second beat
                 return this.ctx.fillIn(
-                    [enforceVerticalConsonanceStrict], s, this.atWithParent(0, c), {},
+                    [enforceVerticalConsonanceStrict], s, this.atWithParent(1, c), {},
                     (p) => new SecondSpeciesMeasure(this.ctx, null, p));
             } else {
                 return this.ctx.fillIn(
