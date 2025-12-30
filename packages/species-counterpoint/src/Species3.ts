@@ -1,19 +1,21 @@
 import { Debug, Rational } from "common";
 import { Score, Note } from "./Common";
 import { CounterpointContext } from "./Context";
-import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice } from "./Basic";
-import { enforceVerticalConsonanceStrict, enforceVerticalConsonanceWithMoving, makePassingTone } from "./rules/CandidateRules";
+import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
+import { enforceVerticalConsonanceStrict, enforceVerticalConsonanceWithMoving } from "./rules/VerticalConsonance";
+import { makePassingTone } from "./rules/PassingTone";
 
 class ThirdSpeciesMeasure extends CounterpointMeasure {
     get writable() {
-        return this.elements.find((x) => x.pitch === null) !== undefined;
+        return !this.elements.at(-1)?.pitch;
     };
 
     constructor(
         ctx: CounterpointContext,
+        mc: MelodicContext,
         notes: Note[],
     ) {
-        super(notes, ctx);
+        super(notes, ctx, mc);
         Debug.assert(notes.length == ctx.parameters.measureLength.value());
     }
 
@@ -26,30 +28,31 @@ class ThirdSpeciesMeasure extends CounterpointMeasure {
     ): { measure: CounterpointMeasure; cost: number }[] {
         // FIXME: withParent
         // @ts-expect-error
-        const ci: CounterpointNoteCursor = this.find((x) => x.value.pitch === null)?.withParent(c);
+        const ci: CounterpointNoteCursor = this.find((x) => x.value.pitch === null && (c.index == 0 ? x.index > 0 : true))?.withParent(c);
         const next: { measure: CounterpointMeasure; cost: number }[] = [];
         Debug.assert(ci !== undefined);
 
         // passing tone (not on the downbeats)
-        if (ci.index !== 0 && ci.index !== this.ctx.parameters.measureLength.value() / 2) {
+        if (ci.index !== 0 && !(c.index == 0 && ci.index == 1) && ci.index !== this.ctx.parameters.measureLength.value() / 2) {
             next.push(...this.ctx.fillIn(
                 [makePassingTone, enforceVerticalConsonanceWithMoving], s,
                 ci, { isPassingTone: true },
                 (p) => {
                     const e = [...this.elements];
                     e.splice(ci.index, 1, new Note(new Rational(1), p, { isPassingTone: true }));
-                    return new ThirdSpeciesMeasure(this.ctx, e);
+                    return new ThirdSpeciesMeasure(this.ctx,
+                        this.ctx.updateMelodicContext(this.melodicContext, p), e);
                 }));
         }
 
         // non-passing tone
         next.push(...this.ctx.fillIn(
-            [enforceVerticalConsonanceStrict], s,
-            ci, { },
+            [enforceVerticalConsonanceStrict], s, ci, { },
             (p) => {
                     const e = [...this.elements];
                     e.splice(ci.index, 1, new Note(new Rational(1), p));
-                    return new ThirdSpeciesMeasure(this.ctx, e);
+                    return new ThirdSpeciesMeasure(this.ctx,
+                        this.ctx.updateMelodicContext(this.melodicContext, p), e);
             }));
 
         return next;
@@ -57,6 +60,13 @@ class ThirdSpeciesMeasure extends CounterpointMeasure {
 }
 
 export class ThirdSpecies extends CounterpointVoice {
+    readonly melodySettings = {
+        maxConsecutiveLeaps: 2,
+        maxIgnorable3rdLeaps: 1,
+        maxUnidirectionalConsecutiveLeaps: 1,
+        maxUnidirectionalIgnorable3rdLeaps: 0,
+    };
+
     clone() {
         return new ThirdSpecies(this.index, this.ctx,
             [...this.elements], this.lowerRange, this.higherRange, this.name) as this;
@@ -69,14 +79,15 @@ export class ThirdSpecies extends CounterpointVoice {
             this.lowerRange, this.higherRange, this.name) as this;
     }
 
-    makeNewMeasure = (s: Score) => {
+    makeNewMeasure = (_s: Score, c: CounterpointMeasureCursor) => {
+        const last = c.prevGlobal()?.value.melodicContext;
         const notes: Note[] = [];
         const len = this.ctx.parameters.measureLength.value();
         for (let i = 0; i < len; i++)
             notes.push(new Note(new Rational(1)));
 
         return [{
-            measure: new ThirdSpeciesMeasure(this.ctx, notes),
+            measure: new ThirdSpeciesMeasure(this.ctx, last ?? emptyMelodicContext(), notes),
             cost: 0,
         }];
     };

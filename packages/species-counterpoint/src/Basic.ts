@@ -1,17 +1,38 @@
-import { Rational } from "common";
 import { H, Measure, Note, Score, Voice } from "./Common";
 import { CounterpointContext } from "./Context";
-import { Cursor, SequentialCursor } from "core";
+import { SequentialCursor } from "core";
 
 export type CounterpointMeasureCursor = SequentialCursor<CounterpointMeasure, CounterpointVoice, never>;
 // FIXME: typechecker bug?
 // @ts-expect-error
 export type CounterpointNoteCursor = SequentialCursor<Note, CounterpointMeasure, CounterpointMeasureCursor>;
 
+export type MelodicContext = {
+    lastPitch?: H.Pitch;
+    leapDirection: number;
+    nConsecutiveLeaps: number;
+    n3rdLeaps: number;
+    nUnidirectionalConsecutiveLeaps: number;
+    nUnidirectional3rdLeaps: number;
+
+
+};
+
+export function emptyMelodicContext(): MelodicContext {
+    return {
+        leapDirection: 0,
+        nConsecutiveLeaps: 0,
+        n3rdLeaps: 0,
+        nUnidirectionalConsecutiveLeaps: 0,
+        nUnidirectional3rdLeaps: 0
+    };
+}
+
 export abstract class CounterpointMeasure extends Measure {
     constructor(
         notes: Note[],
         protected ctx: CounterpointContext,
+        public readonly melodicContext: MelodicContext,
     ) {
         super(notes, ctx.parameters.measureLength);
     }
@@ -32,11 +53,11 @@ export class BlankMeasure extends CounterpointMeasure {
     readonly writable = true;
 
     constructor(ctx: CounterpointContext) {
-        super([new Note(ctx.parameters.measureLength, undefined)], ctx);
+        super([new Note(ctx.parameters.measureLength, undefined)], ctx, emptyMelodicContext());
     }
 
     getNextSteps(s: Score, c: CounterpointMeasureCursor) {
-        return c.container.makeNewMeasure(s);
+        return c.container.makeNewMeasure(s, c);
     }
 
     hash(): string {
@@ -82,6 +103,13 @@ export type VoiceConstructor = new (
     name: string
 ) => CounterpointVoice;
 
+export type MelodicSettings = {
+    maxConsecutiveLeaps: number;
+    maxIgnorable3rdLeaps: number;
+    maxUnidirectionalConsecutiveLeaps: number;
+    maxUnidirectionalIgnorable3rdLeaps: number;
+};
+
 export abstract class CounterpointVoice extends Voice<CounterpointMeasure> {
     constructor(
         i: number,
@@ -94,9 +122,11 @@ export abstract class CounterpointVoice extends Voice<CounterpointMeasure> {
         super(measures, i);
     }
 
+    abstract readonly melodySettings?: MelodicSettings;
+
     abstract clone(): this;
 
-    abstract makeNewMeasure: (s: Score) => {
+    abstract makeNewMeasure: (s: Score, cur: CounterpointMeasureCursor) => {
         measure: CounterpointMeasure,
         cost: number
     }[];
@@ -131,21 +161,21 @@ export class CounterpointScoreBuilder {
     }
 
     // voice ranges taken from:
-    // https://musictheory.pugetsound.edu/mt21c/VoiceRanges.html
+    // https://artinfuser.com/exercise/md/pdf/Artinfuser_Counterpoint_rules.pdf
 
     soprano(v: VoiceConstructor) {
-        return this.voice(v, 'Soprano', H.Pitch.parse('d4')!, H.Pitch.parse('fs5')!);
+        return this.voice(v, 'Soprano', H.Pitch.parse('c4')!, H.Pitch.parse('a5')!);
     }
 
     alto(v: VoiceConstructor) {
-        return this.voice(v, 'Alto', H.Pitch.parse('g3')!, H.Pitch.parse('cs5')!);
+        return this.voice(v, 'Alto', H.Pitch.parse('f3')!, H.Pitch.parse('d5')!);
     }
 
     tenor(v: VoiceConstructor) {
-        return this.voice(v, 'Tenor', H.Pitch.parse('ef3')!, H.Pitch.parse('fs4')!);
+        return this.voice(v, 'Tenor', H.Pitch.parse('c3')!, H.Pitch.parse('a4')!);
     }
 
     bass(v: VoiceConstructor) {
-        return this.voice(v, 'Tenor', H.Pitch.parse('e2')!, H.Pitch.parse('c4')!);
+        return this.voice(v, 'Bass', H.Pitch.parse('f2')!, H.Pitch.parse('d4')!);
     }
 }

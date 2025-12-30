@@ -1,9 +1,9 @@
 import { Debug, Rational } from "common";
 import { aStar, AStarNode } from "./AStar";
 import { Score, H, Parameters, NoteAttributes, MeasureCursor } from "./Common";
-import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice } from "./Basic";
+import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice, MelodicContext } from "./Basic";
 import { HashMap } from "common";
-import { enforceScaleTones, parsePreferred } from "./rules/CandidateRules";
+import { enforceScaleTones, parsePreferred } from "./rules/Scales";
 
 export type LocalRule = (
     ctx: CounterpointContext, s: Score, current: CounterpointNoteCursor
@@ -39,7 +39,7 @@ export class CounterpointContext {
         ['P5',   60],               ['-P5',  60],
         ['m6',   70], ['M6',   70], ['-m6',  70], ['-M6',  70],
         ['P8',   80],               ['-P8',  80],
-        ['P1',  100],
+        ['P1',  200],
     );
 
     forbidWithBass = [H.Interval.parse('P4')!];
@@ -47,6 +47,39 @@ export class CounterpointContext {
     allowChromaticPassingTones = false;
 
     allowUnison = false;
+
+    updateMelodicContext(old: MelodicContext, p: H.Pitch): MelodicContext {
+        if (old.lastPitch === undefined) return {
+            ...old,
+            lastPitch: p
+        };
+        const int = old.lastPitch.intervalTo(p);
+        if (int.steps <= 1) {
+            // clear leaps
+            return {
+                lastPitch: p,
+                leapDirection: 0,
+                nConsecutiveLeaps: 0,
+                n3rdLeaps: 0,
+                nUnidirectionalConsecutiveLeaps: 0,
+                nUnidirectional3rdLeaps: 0
+            };
+        }
+        const isThird = int.steps == 2;
+        const isUnidirectional = int.sign == old.leapDirection;
+        return {
+            lastPitch: p,
+            leapDirection: int.sign,
+            nConsecutiveLeaps: old.nConsecutiveLeaps + 1,
+            n3rdLeaps: old.n3rdLeaps + (isThird ? 1 : 0),
+            nUnidirectionalConsecutiveLeaps: isUnidirectional
+                ? old.nUnidirectionalConsecutiveLeaps + 1
+                : 0,
+            nUnidirectional3rdLeaps: isUnidirectional
+                ? old.nUnidirectional3rdLeaps + (isThird ? 1 : 0)
+                : 0,
+        };
+    }
 
     getCandidates(
         rules: CandidateRule[], s: Score, current: CounterpointNoteCursor,

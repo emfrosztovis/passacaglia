@@ -1,6 +1,9 @@
 import { H } from "../Common";
 import { LocalRule } from "../Context";
 
+/**
+ * Forbid voice crossing, and optionally (if `allowUnison` is set in the context) also forbid unison.
+ */
 export const forbidVoiceOverlapping: LocalRule = (ctx, s, cur) => {
     if (!cur.value.pitch) return 0;
     const end = cur.globalEndTime.value();
@@ -39,6 +42,9 @@ function isPerfectConsonance(i: H.Interval) {
     return simple.equals(0) || simple.equals(7) || simple.equals(12);
 }
 
+/**
+ * Forbid arriving at perfect consonances 1) by similar motion or 2) from perfect consonances.
+ */
 export const forbidPerfectsBySimilarMotion: LocalRule = (_ctx, s, x1) => {
     const x0 = x1.prevGlobal();
     if (!x0?.value.pitch || !x1?.value.pitch) return 0;
@@ -65,6 +71,10 @@ export const forbidPerfectsBySimilarMotion: LocalRule = (_ctx, s, x1) => {
     return 0;
 };
 
+
+/**
+ * Assign heuristic costs according to motion type, based on the settings in CounterpointContext.
+ */
 export const prioritizeVoiceMotion: LocalRule = (ctx, s, x1) => {
     const x0 = x1.prevGlobal();
     if (!x0?.value.pitch || !x1?.value.pitch) return 0;

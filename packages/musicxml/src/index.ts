@@ -1,12 +1,9 @@
-import * as mxl from "musicxml-interfaces";
-import { StandardHeptatonic } from "core";
+import { note, pitch, score } from "./Containers";
 
 export const toMxl = {
-    pitch(x: StandardHeptatonic.Pitch): mxl.Pitch {
-        return {
-            step: 'CDEFGAB'[x.index],
-            alter: x.acci.value(),
-            octave: x.period,
-        }
-    },
-}
+    pitch: pitch,
+    note: note,
+    score: score
+};
+
+export { serializeScore } from 'musicxml-interfaces';

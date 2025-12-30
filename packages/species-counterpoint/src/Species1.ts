@@ -1,8 +1,7 @@
-import { Debug, Rational } from "common";
 import { H, Score, Note } from "./Common";
 import { CounterpointContext } from "./Context";
-import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointVoice } from "./Basic";
-import { enforceVerticalConsonanceStrict } from "./rules/CandidateRules";
+import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
+import { enforceVerticalConsonanceStrict } from "./rules/VerticalConsonance";
 
 class FirstSpeciesMeasure extends CounterpointMeasure {
     get writable() {
@@ -11,9 +10,10 @@ class FirstSpeciesMeasure extends CounterpointMeasure {
 
     constructor(
         ctx: CounterpointContext,
+        mc: MelodicContext,
         p0: H.Pitch | null = null
     ) {
-        super([new Note(ctx.parameters.measureLength, p0)], ctx);
+        super([new Note(ctx.parameters.measureLength, p0)], ctx, mc);
     }
 
     hash(): string {
@@ -25,11 +25,19 @@ class FirstSpeciesMeasure extends CounterpointMeasure {
     ): { measure: CounterpointMeasure; cost: number }[] {
         const rules = [enforceVerticalConsonanceStrict];
         return this.ctx.fillIn(rules, s, this.atWithParent(0, c), {},
-            (p) => new FirstSpeciesMeasure(this.ctx, p));
+            (p) => new FirstSpeciesMeasure(this.ctx,
+                this.ctx.updateMelodicContext(this.melodicContext, p), p));
     }
 }
 
 export class FirstSpecies extends CounterpointVoice {
+    readonly melodySettings = {
+        maxConsecutiveLeaps: 2,
+        maxIgnorable3rdLeaps: 2,
+        maxUnidirectionalConsecutiveLeaps: 1,
+        maxUnidirectionalIgnorable3rdLeaps: 1,
+    };
+
     clone() {
         return new FirstSpecies(this.index, this.ctx, [...this.elements],
             this.lowerRange, this.higherRange, this.name) as this;
@@ -42,9 +50,10 @@ export class FirstSpecies extends CounterpointVoice {
             this.lowerRange, this.higherRange, this.name) as this;
     }
 
-    makeNewMeasure = (s: Score) => {
+    makeNewMeasure = (s: Score, c: CounterpointMeasureCursor) => {
+        const last = c.prevGlobal()?.value.melodicContext;
         return [{
-            measure: new FirstSpeciesMeasure(this.ctx),
+            measure: new FirstSpeciesMeasure(this.ctx, last ?? emptyMelodicContext()),
             cost: 0,
         }];
     };

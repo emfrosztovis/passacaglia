@@ -1,13 +1,15 @@
 import { Debug, LogLevel, Rational } from "common";
 import { CounterpointScoreBuilder } from "./Basic";
 import { H, parseNotes } from "./Common";
-import { forbidPerfectsBySimilarMotion, forbidVoiceOverlapping, prioritizeVoiceMotion } from "./rules/VerticalRules";
-import { DegreeMatrixPreset, enforceDirectionalDegreeMatrix, enforceMelodyIntervals, enforceMinor, enforcePassingTones, enforceScaleTones } from "./rules/CandidateRules";
+import { forbidPerfectsBySimilarMotion, forbidVoiceOverlapping, prioritizeVoiceMotion } from "./rules/LocalRules";
+import { DegreeMatrixPreset, enforceDirectionalDegreeMatrix, enforceMinor, enforceScaleTones } from "./rules/Scales";
 import { CounterpointContext } from "./Context";
 import { play } from "./Play";
 import { ThirdSpecies } from "./Species3";
 import { FirstSpecies } from "./Species1";
 import { SecondSpecies } from "./Species2";
+import { enforcePassingTones } from "./rules/PassingTone";
+import { enforceLeapPreparationAfter, enforceLeapPreparationBefore, enforceMelodyIntervals, limitConsecutiveLeaps } from "./rules/Melody";
 
 export const ctx = new CounterpointContext(
     8, // targetMeasures
@@ -39,33 +41,36 @@ export const ctx = new CounterpointContext(
 // );
 
 ctx.localRules = [
+    limitConsecutiveLeaps,
     forbidVoiceOverlapping,
     forbidPerfectsBySimilarMotion,
     prioritizeVoiceMotion,
 ];
 
 ctx.candidateRules = [
-    enforceMinor(H.Pitch.parse('c')!),
-    // enforceScaleTones(H.Scales.C.major),
+    // enforceMinor(H.Pitch.parse('c')!),
+    enforceScaleTones(H.Scales.C.major),
     // enforceScaleTones(H.Scales.C.chromatic),
     enforcePassingTones,
     enforceMelodyIntervals,
     enforceDirectionalDegreeMatrix(H.Scales.C.major, DegreeMatrixPreset.major),
+    enforceLeapPreparationBefore,
+    enforceLeapPreparationAfter,
 ];
 
-ctx.advanceReward = 30;
+ctx.advanceReward = 100;
 
 ctx.allowUnison = false;
 
 const score = new CounterpointScoreBuilder(ctx)
-    .soprano(FirstSpecies)
-    .alto(SecondSpecies)
-    // .tenor(SecondSpecies)
+    // .soprano(FirstSpecies)
+    // .alto(SecondSpecies)
+    .tenor(ThirdSpecies)
     // .tenor(FirstSpecies)
     .cantus([
         parseNotes(['c3', ctx.parameters.measureLength]),
         parseNotes(['d3', ctx.parameters.measureLength]),
-        parseNotes(['ef3', ctx.parameters.measureLength]),
+        parseNotes(['e3', ctx.parameters.measureLength]),
         parseNotes(['g3', ctx.parameters.measureLength]),
         parseNotes(['f3', ctx.parameters.measureLength]),
         parseNotes(['d3', ctx.parameters.measureLength]),

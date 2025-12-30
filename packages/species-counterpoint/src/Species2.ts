@@ -1,8 +1,9 @@
 import { Debug } from "common";
 import { H, Score, Note } from "./Common";
 import { CounterpointContext } from "./Context";
-import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointVoice } from "./Basic";
-import { enforceVerticalConsonanceStrict, enforceVerticalConsonanceWithMoving, makePassingTone } from "./rules/CandidateRules";
+import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
+import { enforceVerticalConsonanceStrict, enforceVerticalConsonanceWithMoving } from "./rules/VerticalConsonance";
+import { makePassingTone } from "./rules/PassingTone";
 
 class SecondSpeciesMeasure extends CounterpointMeasure {
     get writable() {
@@ -11,6 +12,7 @@ class SecondSpeciesMeasure extends CounterpointMeasure {
 
     constructor(
         ctx: CounterpointContext,
+        mc: MelodicContext,
         public readonly p0: H.Pitch | null = null,
         public readonly p1: H.Pitch | null = null,
         isPassingTone = false
@@ -20,7 +22,7 @@ class SecondSpeciesMeasure extends CounterpointMeasure {
         super([
             new Note(len, p0),
             new Note(len, p1, { isPassingTone })
-        ], ctx);
+        ], ctx, mc);
     }
 
     hash(): string {
@@ -32,14 +34,18 @@ class SecondSpeciesMeasure extends CounterpointMeasure {
     ): { measure: CounterpointMeasure; cost: number }[] {
         if (this.p0 == null) {
             if (c.index == 0) {
-                // start first measure from the second beat
+                // start first measure from the upbeat
                 return this.ctx.fillIn(
                     [enforceVerticalConsonanceStrict], s, this.atWithParent(1, c), {},
-                    (p) => new SecondSpeciesMeasure(this.ctx, null, p));
+                    (p) => new SecondSpeciesMeasure(this.ctx,
+                        this.ctx.updateMelodicContext(this.melodicContext, p),
+                        null, p));
             } else {
                 return this.ctx.fillIn(
                     [enforceVerticalConsonanceStrict], s, this.atWithParent(0, c), {},
-                    (p) => new SecondSpeciesMeasure(this.ctx, p, null));
+                    (p) => new SecondSpeciesMeasure(this.ctx,
+                        this.ctx.updateMelodicContext(this.melodicContext, p),
+                        p, null));
             }
         }
 
@@ -50,13 +56,17 @@ class SecondSpeciesMeasure extends CounterpointMeasure {
             next.push(...this.ctx.fillIn(
                 [makePassingTone, enforceVerticalConsonanceWithMoving], s,
                 this.atWithParent(1, c), { isPassingTone: true },
-                (p) => new SecondSpeciesMeasure(this.ctx, this.p0, p, true)));
+                (p) => new SecondSpeciesMeasure(this.ctx,
+                    this.ctx.updateMelodicContext(this.melodicContext, p),
+                    this.p0, p, true)));
 
             // non-passing tones
             next.push(...this.ctx.fillIn(
                 [enforceVerticalConsonanceStrict], s,
                 this.atWithParent(1, c), {},
-                (p) => new SecondSpeciesMeasure(this.ctx, this.p0, p)));
+                (p) => new SecondSpeciesMeasure(this.ctx,
+                    this.ctx.updateMelodicContext(this.melodicContext, p),
+                    this.p0, p)));
 
             return next;
         }
@@ -65,6 +75,13 @@ class SecondSpeciesMeasure extends CounterpointMeasure {
 }
 
 export class SecondSpecies extends CounterpointVoice {
+    readonly melodySettings = {
+        maxConsecutiveLeaps: 2,
+        maxIgnorable3rdLeaps: 1,
+        maxUnidirectionalConsecutiveLeaps: 1,
+        maxUnidirectionalIgnorable3rdLeaps: 0,
+    };
+
     clone() {
         return new SecondSpecies(this.index, this.ctx,
             [...this.elements], this.lowerRange, this.higherRange, this.name) as this;
@@ -77,9 +94,10 @@ export class SecondSpecies extends CounterpointVoice {
             this.lowerRange, this.higherRange, this.name) as this;
     }
 
-    makeNewMeasure = (s: Score) => {
+    makeNewMeasure = (_s: Score, c: CounterpointMeasureCursor) => {
+        const last = c.prevGlobal()?.value.melodicContext;
         return [{
-            measure: new SecondSpeciesMeasure(this.ctx),
+            measure: new SecondSpeciesMeasure(this.ctx, last ?? emptyMelodicContext()),
             cost: 0,
         }];
     };
