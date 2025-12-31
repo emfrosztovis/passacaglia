@@ -2,7 +2,7 @@ import { Debug, Rational } from "common";
 import { Score, Note } from "./Common";
 import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
-import { enforceVerticalConsonanceStrict, enforceVerticalConsonanceWithMoving } from "./rules/VerticalConsonance";
+import { enforceVerticalConsonanceStrict } from "./rules/VerticalConsonance";
 import { makePassingTone } from "./rules/PassingTone";
 
 class ThirdSpeciesMeasure extends CounterpointMeasure {
@@ -32,10 +32,10 @@ class ThirdSpeciesMeasure extends CounterpointMeasure {
         const next: { measure: CounterpointMeasure; cost: number }[] = [];
         Debug.assert(ci !== undefined);
 
-        // passing tone (not on the downbeats)
-        if (ci.index !== 0 && !(c.index == 0 && ci.index == 1) && ci.index !== this.ctx.parameters.measureLength.value() / 2) {
+        // passing tone (not on the first beat)
+        if (ci.index !== 0 && !(c.index == 0 && ci.index == 1)) {
             next.push(...this.ctx.fillIn(
-                [makePassingTone, enforceVerticalConsonanceWithMoving], s,
+                [makePassingTone], s,
                 ci, { isPassingTone: true },
                 (p) => {
                     const e = [...this.elements];
@@ -61,6 +61,7 @@ class ThirdSpeciesMeasure extends CounterpointMeasure {
 
 export class ThirdSpecies extends CounterpointVoice {
     readonly melodySettings = {
+        forbidRepeatedNotes: true,
         maxConsecutiveLeaps: 2,
         maxIgnorable3rdLeaps: 1,
         maxUnidirectionalConsecutiveLeaps: 1,
@@ -69,14 +70,14 @@ export class ThirdSpecies extends CounterpointVoice {
 
     clone() {
         return new ThirdSpecies(this.index, this.ctx,
-            [...this.elements], this.lowerRange, this.higherRange, this.name) as this;
+            [...this.elements], this.lowerRange, this.higherRange, this.name, this.clef) as this;
     }
 
     replaceMeasure(i: number, m: CounterpointMeasure): this {
         const e = [...this.elements];
         e.splice(i, 1, m);
         return new ThirdSpecies(this.index, this.ctx, e,
-            this.lowerRange, this.higherRange, this.name) as this;
+            this.lowerRange, this.higherRange, this.name, this.clef) as this;
     }
 
     makeNewMeasure = (_s: Score, c: CounterpointMeasureCursor) => {

@@ -1,51 +1,67 @@
-import { DurationalElement, SequentialContainer } from "core";
 import { StandardHeptatonic as H } from "core";
-import * as mxl from "musicxml-interfaces";
-import * as mxlb from "musicxml-interfaces/lib/builders";
+import { create } from "xmlbuilder2";
+import { NoteLike, MeasureLike, VoiceLike } from "./Types";
 
-export type NoteLike = DurationalElement & {
-    pitch: H.Pitch | null;
-};
-
-export type MeasureLike = DurationalElement & SequentialContainer<NoteLike>;
-
-export type VoiceLike = SequentialContainer<MeasureLike>;
-
-export function pitch(x: H.Pitch): mxl.Pitch {
-    return mxlb.buildPitch((b) => b
-        .step('CDEFGAB'[x.index])
-        .alter(x.acci.value())
-        .octave(x.period));
-};
-
-export function note(n: NoteLike): mxl.Note {
-    if (n.pitch) {
-        return mxlb.buildNote((x) => x
-            .pitch(pitch(n.pitch!))
-            .duration(n.duration.value()));
-    } else {
-        return mxlb.buildNote((x) => x
-            .rest((x) => x)
-            .duration(n.duration.value()));
+export function pitch(x: H.Pitch) {
+    return {
+        step: 'CDEFGAB'[x.index],
+        alter: `${x.acci.value()}`,
+        octave: `${x.period}`,
     }
+};
+
+export function note(n: NoteLike) {
+    if (n.pitch) return {
+        pitch: pitch(n.pitch),
+        duration: `${n.duration.value()}`
+    }; else return {
+        rest: {},
+        duration: `${n.duration.value()}`
+    };
 }
 
-export function score(vs: VoiceLike[]): mxl.ScoreTimewise {
-    const len = Math.max(...vs.map((x) => x.size));
-    let measures: mxl.Measure[] = [];
-    for (let i = 0; i < len; i++) {
-        const parts = vs.map((x) => {
-            const m = x.elements.at(i);
-            if (!m) return [];
-            return m.elements.map(note);
-        });
-        measures.push(mxlb.buildMeasure((x) => {
-            x = x.number(`${i}`);
-            parts.forEach((part, i) => x = x.set(`#${i}`, part as unknown as boolean[]));
-            return x;
-        }));
-    }
+export function firstMeasure(m: MeasureLike, v: VoiceLike) {
+    return {
+        '@number': 0,
+        attributes: {
+            divisions: 1,
+            clef: {
+                sign: v.clef.type,
+                line: v.clef.line,
+                'clef-octave-change': v.clef.octave,
+            }
+        },
+        note: m.elements.map(note)
+    };
+}
 
-    return mxlb.buildScoreTimewise((x) => x
-        .measures(measures));
+export function measure(m: MeasureLike, i: number) {
+    return {
+        '@number': i,
+        note: m.elements.map(note)
+    };
+}
+
+export function part(v: VoiceLike) {
+    return {
+        '@id': v.name,
+        measure: v.elements.map((m, i) => i == 0 ? firstMeasure(m, v) : measure(m, i))
+    };
+}
+
+export function score(vs: readonly VoiceLike[]): string {
+    return create({
+        standalone: false,
+    }, {
+        'score-partwise': {
+            '@version': '4.0',
+            'part-list': {
+                'score-part': vs.map((x) => ({
+                    '@id': x.name,
+                    'part-name': x.name
+                })),
+            },
+            part: vs.map(part)
+        }
+    }).end({ prettyPrint: true });
 }

@@ -2,7 +2,7 @@ import { Debug } from "common";
 import { H, Score, Note } from "./Common";
 import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
-import { enforceVerticalConsonanceStrict, enforceVerticalConsonanceWithMoving } from "./rules/VerticalConsonance";
+import { enforceVerticalConsonanceStrict } from "./rules/VerticalConsonance";
 import { makePassingTone } from "./rules/PassingTone";
 
 class SecondSpeciesMeasure extends CounterpointMeasure {
@@ -54,7 +54,7 @@ class SecondSpeciesMeasure extends CounterpointMeasure {
 
             // passing tones
             next.push(...this.ctx.fillIn(
-                [makePassingTone, enforceVerticalConsonanceWithMoving], s,
+                [makePassingTone], s,
                 this.atWithParent(1, c), { isPassingTone: true },
                 (p) => new SecondSpeciesMeasure(this.ctx,
                     this.ctx.updateMelodicContext(this.melodicContext, p),
@@ -76,6 +76,7 @@ class SecondSpeciesMeasure extends CounterpointMeasure {
 
 export class SecondSpecies extends CounterpointVoice {
     readonly melodySettings = {
+        forbidRepeatedNotes: true,
         maxConsecutiveLeaps: 2,
         maxIgnorable3rdLeaps: 1,
         maxUnidirectionalConsecutiveLeaps: 1,
@@ -84,14 +85,14 @@ export class SecondSpecies extends CounterpointVoice {
 
     clone() {
         return new SecondSpecies(this.index, this.ctx,
-            [...this.elements], this.lowerRange, this.higherRange, this.name) as this;
+            [...this.elements], this.lowerRange, this.higherRange, this.name, this.clef) as this;
     }
 
     replaceMeasure(i: number, m: CounterpointMeasure): this {
         const e = [...this.elements];
         e.splice(i, 1, m);
         return new SecondSpecies(this.index, this.ctx, e,
-            this.lowerRange, this.higherRange, this.name) as this;
+            this.lowerRange, this.higherRange, this.name, this.clef) as this;
     }
 
     makeNewMeasure = (_s: Score, c: CounterpointMeasureCursor) => {

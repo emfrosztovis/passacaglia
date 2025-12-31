@@ -1,5 +1,6 @@
 import { AsRational, Debug, Rational } from 'common';
 import { Cursor, DurationalElement, StandardHeptatonic as H, SequentialContainer } from 'core';
+import { Clef } from 'musicxml';
 
 export { StandardHeptatonic as H } from 'core';
 export const P = H.Pitch;
@@ -84,6 +85,7 @@ export abstract class Voice<M extends Measure = Measure> extends SequentialConta
     }
 
     abstract readonly name: string;
+    abstract readonly clef: Clef;
     abstract clone(): this;
 
     noteAt(t: AsRational) {

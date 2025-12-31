@@ -1,7 +1,8 @@
 import { Debug, LogLevel, Rational } from "common";
 import { CounterpointScoreBuilder } from "./Basic";
 import { H, parseNotes } from "./Common";
-import { forbidPerfectsBySimilarMotion, forbidVoiceOverlapping, prioritizeVoiceMotion } from "./rules/LocalRules";
+import { forbidVoiceOverlapping, prioritizeVoiceMotion } from "./rules/LocalRules";
+import { forbidPerfectsBySimilarMotion } from "./rules/ParallelConsonance";
 import { DegreeMatrixPreset, enforceDirectionalDegreeMatrix, enforceMinor, enforceScaleTones } from "./rules/Scales";
 import { CounterpointContext } from "./Context";
 import { play } from "./Play";
@@ -10,8 +11,9 @@ import { FirstSpecies } from "./Species1";
 import { SecondSpecies } from "./Species2";
 import { enforcePassingTones } from "./rules/PassingTone";
 import { enforceLeapPreparationAfter, enforceLeapPreparationBefore, enforceMelodyIntervals, limitConsecutiveLeaps } from "./rules/Melody";
+import { Clef } from "musicxml";
 
-export const ctx = new CounterpointContext(
+const ctx = new CounterpointContext(
     8, // targetMeasures
     {
         measureLength: new Rational(4)
@@ -67,7 +69,7 @@ const score = new CounterpointScoreBuilder(ctx)
     // .alto(SecondSpecies)
     .tenor(ThirdSpecies)
     // .tenor(FirstSpecies)
-    .cantus([
+    .cantus(Clef.Bass, [
         parseNotes(['c3', ctx.parameters.measureLength]),
         parseNotes(['d3', ctx.parameters.measureLength]),
         parseNotes(['e3', ctx.parameters.measureLength]),
@@ -106,4 +108,4 @@ Debug.level = LogLevel.Trace;
 const result = ctx.solve(score);
 console.log(result?.toString());
 if (result)
-    await play(result, [72, 72, 72, 72], 180);
+    await play(result, [72, 72, 72, 72]);

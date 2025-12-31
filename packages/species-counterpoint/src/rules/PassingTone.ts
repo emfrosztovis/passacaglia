@@ -1,6 +1,9 @@
 import { Debug } from "common";
 import { CandidateRule } from "../Context";
 
+/**
+ * Enforce that notes surrounding a passing tone are its neighbors in ascending or descending order.
+ */
 export const enforcePassingTones: CandidateRule = (_ctx, _s, cur, c) => {
     Debug.assert(c !== null);
     const p1 = cur.prevGlobal();

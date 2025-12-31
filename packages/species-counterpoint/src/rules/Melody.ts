@@ -18,11 +18,18 @@ export const enforceMelodyIntervals: CandidateRule = (ctx, _s, cur, c, attr) =>
     const p2 = p1!.prevGlobal();
     const prev2 = p2?.value;
 
+    const v = cur.parent.container;
+    let ints = [...ctx.melodicIntervals.entries()];
+    if (v.melodySettings?.forbidRepeatedNotes)
+        ints = ints.filter(([x, _]) => x.distance.num > 0);
+
     const sign = (prev2?.pitch && prev2.pitch.ord() > prev.pitch.ord()) ? -1 : 1;
+
     const nexts = new HashMap<H.Pitch, number>(
-        [...ctx.melodicIntervals.entries()].map(([x, cost]) =>
+        ints.map(([x, cost]) =>
             [prev.pitch!.add(x.withSign((x.sign * sign) as -1 | 1)), cost])
     );
+
 
     return c.intersectWith(nexts, (a, b) => a + b);
 };

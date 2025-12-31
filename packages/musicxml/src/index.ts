@@ -6,4 +6,4 @@ export const toMxl = {
     score: score
 };
 
-export { serializeScore } from 'musicxml-interfaces';
+export * from './Types';

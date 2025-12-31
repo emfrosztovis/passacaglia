@@ -1,4 +1,3 @@
-import jzz from "jzz";
 import { Score } from "./Common";
 
 type Event = {
@@ -11,11 +10,28 @@ type Event = {
     channel: number,
     pitch: number,
     at: number
+};
+
+export type PlayOptions = {
+    tempo?: number,
+    synth?: boolean
 }
 
-export async function play(s: Score, instrs: number[], tempo = 180) {
-    const midi = await jzz();
-    const port = await midi.openMidiOut();
+export async function play(s: Score, instrs: number[], opts?: PlayOptions) {
+    const JZZ = (await import('jzz')).default;
+
+    let name: string | undefined;
+    if (opts?.synth) {
+        // @ts-ignore
+        (await import('jzz-synth-tiny')).Tiny(JZZ);
+        // @ts-ignore
+        JZZ.synth.Tiny.register('synth');
+        name = 'synth';
+    }
+
+    const midi = await JZZ();
+    const port = await midi.openMidiOut(name);
+    const tempo = opts?.tempo ?? 180;
 
     instrs.forEach((x, i) => port.program(i, x));
 
@@ -62,5 +78,4 @@ export async function play(s: Score, instrs: number[], tempo = 180) {
             }
         }
     }
-    midi.close();
 }

@@ -1,3 +1,4 @@
+import { Clef } from "musicxml";
 import { H, Measure, Note, Score, Voice } from "./Common";
 import { CounterpointContext } from "./Context";
 import { SequentialCursor } from "core";
@@ -14,8 +15,6 @@ export type MelodicContext = {
     n3rdLeaps: number;
     nUnidirectionalConsecutiveLeaps: number;
     nUnidirectional3rdLeaps: number;
-
-
 };
 
 export function emptyMelodicContext(): MelodicContext {
@@ -84,7 +83,8 @@ export class FixedVoice extends Voice {
     constructor(
         i: number,
         public readonly measures: FixedMeasure[],
-        public readonly name = 'Cantus'
+        public readonly clef: Clef,
+        public readonly name = 'Cantus',
     ) {
         super(measures, i);
     }
@@ -100,10 +100,12 @@ export type VoiceConstructor = new (
     measures: CounterpointMeasure[],
     lowerRange: H.Pitch,
     higherRange: H.Pitch,
-    name: string
+    name: string,
+    clef: Clef,
 ) => CounterpointVoice;
 
 export type MelodicSettings = {
+    forbidRepeatedNotes: boolean;
     maxConsecutiveLeaps: number;
     maxIgnorable3rdLeaps: number;
     maxUnidirectionalConsecutiveLeaps: number;
@@ -117,7 +119,8 @@ export abstract class CounterpointVoice extends Voice<CounterpointMeasure> {
         measures: CounterpointMeasure[],
         public readonly lowerRange: H.Pitch,
         public readonly higherRange: H.Pitch,
-        public readonly name: string
+        public readonly name: string,
+        public readonly clef: Clef,
     ) {
         super(measures, i);
     }
@@ -145,18 +148,18 @@ export class CounterpointScoreBuilder {
         return new Score(this.ctx.parameters, this.#voices);
     }
 
-    voice(v: VoiceConstructor, name: string, l: H.Pitch, h: H.Pitch): this {
+    voice(v: VoiceConstructor, clef: Clef, name: string, l: H.Pitch, h: H.Pitch): this {
         const ms: BlankMeasure[] = [];
         for (let i = 0; i < this.ctx.targetMeasures; i++)
             ms.push(new BlankMeasure(this.ctx));
 
-        this.#voices.push(new v(this.#voices.length, this.ctx, ms, l, h, name));
+        this.#voices.push(new v(this.#voices.length, this.ctx, ms, l, h, name, clef));
         return this;
     }
 
-    cantus(measures: Note[][]): this {
+    cantus(clef: Clef, measures: Note[][]): this {
         const ms = measures.map((x) => new FixedMeasure(x, this.ctx));
-        this.#voices.push(new FixedVoice(this.#voices.length, ms));
+        this.#voices.push(new FixedVoice(this.#voices.length, ms, clef));
         return this;
     }
 
@@ -164,18 +167,18 @@ export class CounterpointScoreBuilder {
     // https://artinfuser.com/exercise/md/pdf/Artinfuser_Counterpoint_rules.pdf
 
     soprano(v: VoiceConstructor) {
-        return this.voice(v, 'Soprano', H.Pitch.parse('c4')!, H.Pitch.parse('a5')!);
+        return this.voice(v, Clef.Treble, 'Soprano', H.Pitch.parse('c4')!, H.Pitch.parse('a5')!);
     }
 
     alto(v: VoiceConstructor) {
-        return this.voice(v, 'Alto', H.Pitch.parse('f3')!, H.Pitch.parse('d5')!);
+        return this.voice(v, Clef.Alto, 'Alto', H.Pitch.parse('f3')!, H.Pitch.parse('d5')!);
     }
 
     tenor(v: VoiceConstructor) {
-        return this.voice(v, 'Tenor', H.Pitch.parse('c3')!, H.Pitch.parse('a4')!);
+        return this.voice(v, Clef.Treble8vb, 'Tenor', H.Pitch.parse('c3')!, H.Pitch.parse('a4')!);
     }
 
     bass(v: VoiceConstructor) {
-        return this.voice(v, 'Bass', H.Pitch.parse('f2')!, H.Pitch.parse('d4')!);
+        return this.voice(v, Clef.Bass, 'Bass', H.Pitch.parse('f2')!, H.Pitch.parse('d4')!);
     }
 }

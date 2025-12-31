@@ -32,6 +32,7 @@ class FirstSpeciesMeasure extends CounterpointMeasure {
 
 export class FirstSpecies extends CounterpointVoice {
     readonly melodySettings = {
+        forbidRepeatedNotes: false,
         maxConsecutiveLeaps: 2,
         maxIgnorable3rdLeaps: 2,
         maxUnidirectionalConsecutiveLeaps: 1,
@@ -40,14 +41,14 @@ export class FirstSpecies extends CounterpointVoice {
 
     clone() {
         return new FirstSpecies(this.index, this.ctx, [...this.elements],
-            this.lowerRange, this.higherRange, this.name) as this;
+            this.lowerRange, this.higherRange, this.name, this.clef) as this;
     }
 
     replaceMeasure(i: number, m: CounterpointMeasure): this {
         const e = [...this.elements];
         e.splice(i, 1, m);
         return new FirstSpecies(this.index, this.ctx, e,
-            this.lowerRange, this.higherRange, this.name) as this;
+            this.lowerRange, this.higherRange, this.name, this.clef) as this;
     }
 
     makeNewMeasure = (s: Score, c: CounterpointMeasureCursor) => {

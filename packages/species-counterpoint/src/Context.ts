@@ -39,7 +39,7 @@ export class CounterpointContext {
         ['P5',   60],               ['-P5',  60],
         ['m6',   70], ['M6',   70], ['-m6',  70], ['-M6',  70],
         ['P8',   80],               ['-P8',  80],
-        ['P1',  200],
+        ['P1', 1000],
     );
 
     forbidWithBass = [H.Interval.parse('P4')!];

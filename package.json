@@ -5,7 +5,8 @@
   "description": "Monorepo for `passacaglia`, an experimental procedural music engine",
   "version": "1.0.0",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev:pkgs": "pnpm -r --sort --parallel --filter='./packages/*' dev",
+    "dev": "pnpm concurrently -k \"pnpm run dev:pkgs\" \"pnpm --filter='debug-ui' dev\""
   },
   "keywords": [],
   "author": "",

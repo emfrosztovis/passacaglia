@@ -31,7 +31,7 @@ onMounted(() => {
   if (container.value) {
     osmd = new OSMD(container.value, {
         backend: "canvas",
-        drawTitle: true,
+        drawTitle: false,
         autoResize: props.autoResize
     });
     osmd.load(props.file).then(() => osmd!.render());

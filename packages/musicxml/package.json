@@ -19,7 +19,7 @@
   "dependencies": {
     "common": "workspace:*",
     "core": "workspace:*",
-    "musicxml-interfaces": "^0.0.21"
+    "xmlbuilder2": "^3.1.1"
   },
   "keywords": [],
   "author": "",
