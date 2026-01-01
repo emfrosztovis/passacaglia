@@ -24,7 +24,7 @@ class FirstSpeciesMeasure extends CounterpointMeasure {
         s: Score, c: CounterpointMeasureCursor
     ): { measure: CounterpointMeasure; cost: number }[] {
         const rules = [enforceVerticalConsonanceStrict];
-        return this.ctx.fillIn(rules, s, this.atWithParent(0, c), {},
+        return this.ctx.fillIn(rules, s, this.atWithParent(0, c), undefined,
             (p) => new FirstSpeciesMeasure(this.ctx,
                 this.ctx.updateMelodicContext(this.melodicContext, p), p));
     }
@@ -51,7 +51,7 @@ export class FirstSpecies extends CounterpointVoice {
             this.lowerRange, this.higherRange, this.name, this.clef) as this;
     }
 
-    makeNewMeasure = (s: Score, c: CounterpointMeasureCursor) => {
+    makeNewMeasure = (_s: Score, c: CounterpointMeasureCursor) => {
         const last = c.prevGlobal()?.value.melodicContext;
         return [{
             measure: new FirstSpeciesMeasure(this.ctx, last ?? emptyMelodicContext()),

@@ -18,7 +18,13 @@ export namespace Clef {
 }
 
 export type NoteLike = DurationalElement & {
-    pitch: H.Pitch | null;
+    readonly pitch: H.Pitch | null;
+    readonly isNonHarmonic?: string | boolean;
+
+    /**
+     * Whether the note is tied to the previous one.
+     */
+    readonly isTied?: boolean;
 };
 
 export type MeasureLike = DurationalElement & SequentialContainer<NoteLike>;

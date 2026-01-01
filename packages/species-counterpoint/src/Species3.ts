@@ -4,6 +4,7 @@ import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
 import { enforceVerticalConsonanceStrict } from "./rules/VerticalConsonance";
 import { makePassingTone } from "./rules/PassingTone";
+import { makeNeighborTone } from "./rules";
 
 class ThirdSpeciesMeasure extends CounterpointMeasure {
     get writable() {
@@ -32,14 +33,24 @@ class ThirdSpeciesMeasure extends CounterpointMeasure {
         const next: { measure: CounterpointMeasure; cost: number }[] = [];
         Debug.assert(ci !== undefined);
 
-        // passing tone (not on the first beat)
+        // non-harmonic tone (not on the first beat)
         if (ci.index !== 0 && !(c.index == 0 && ci.index == 1)) {
             next.push(...this.ctx.fillIn(
-                [makePassingTone], s,
-                ci, { isPassingTone: true },
+                [makeNeighborTone], s,
+                ci, 'neighbor',
                 (p) => {
                     const e = [...this.elements];
-                    e.splice(ci.index, 1, new Note(new Rational(1), p, { isPassingTone: true }));
+                    e.splice(ci.index, 1, new Note(new Rational(1), p, 'neighbor'));
+                    return new ThirdSpeciesMeasure(this.ctx,
+                        this.ctx.updateMelodicContext(this.melodicContext, p), e);
+                }));
+
+            next.push(...this.ctx.fillIn(
+                [makePassingTone], s,
+                ci, 'passing_tone',
+                (p) => {
+                    const e = [...this.elements];
+                    e.splice(ci.index, 1, new Note(new Rational(1), p, 'passing_tone'));
                     return new ThirdSpeciesMeasure(this.ctx,
                         this.ctx.updateMelodicContext(this.melodicContext, p), e);
                 }));
@@ -47,7 +58,7 @@ class ThirdSpeciesMeasure extends CounterpointMeasure {
 
         // non-passing tone
         next.push(...this.ctx.fillIn(
-            [enforceVerticalConsonanceStrict], s, ci, { },
+            [enforceVerticalConsonanceStrict], s, ci, undefined,
             (p) => {
                     const e = [...this.elements];
                     e.splice(ci.index, 1, new Note(new Rational(1), p));

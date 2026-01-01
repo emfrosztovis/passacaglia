@@ -1,6 +1,6 @@
-import { Debug, Rational } from "common";
+import { Debug, Rational, shuffle } from "common";
 import { aStar, AStarNode } from "./AStar";
-import { Score, H, Parameters, NoteAttributes, MeasureCursor } from "./Common";
+import { Score, H, Parameters, MeasureCursor, NonHarmonicType } from "./Common";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice, MelodicContext } from "./Basic";
 import { HashMap } from "common";
 import { enforceScaleTones, parsePreferred } from "./rules/Scales";
@@ -15,7 +15,7 @@ export type GlobalRule = (
 
 export type CandidateRule = (
     ctx: CounterpointContext, s: Score, current: CounterpointNoteCursor,
-    candidates: HashMap<H.Pitch, number> | null, attr: NoteAttributes
+    candidates: HashMap<H.Pitch, number> | null, type?: NonHarmonicType
 ) => HashMap<H.Pitch, number>;
 
 export class CounterpointContext {
@@ -83,11 +83,11 @@ export class CounterpointContext {
 
     getCandidates(
         rules: CandidateRule[], s: Score, current: CounterpointNoteCursor,
-        attr: NoteAttributes
+        type?: NonHarmonicType
     ) {
         let candidates: HashMap<H.Pitch, number> | null = null;
         for (const r of [...this.candidateRules, ...rules]) {
-            candidates = r(this, s, current, candidates, attr);
+            candidates = r(this, s, current, candidates, type);
             if (candidates.size == 0) return candidates;
         }
         Debug.assert(candidates !== null);
@@ -97,13 +97,13 @@ export class CounterpointContext {
     fillIn(
         rules: CandidateRule[],
         s: Score, note: CounterpointNoteCursor,
-        attr: NoteAttributes,
+        type: NonHarmonicType | undefined,
         create: (p: H.Pitch) => CounterpointMeasure,
         costOffset = 0,
     ) {
         const measure = note.parent;
         const voice = measure.container;
-        const candidates = [...this.getCandidates(rules, s, note, attr).entries()];
+        const candidates = [...this.getCandidates(rules, s, note, type).entries()];
 
         return candidates.flatMap(([p, cost]) => {
             const m = create(p);
@@ -169,6 +169,7 @@ export class CounterpointContext {
                 return this.#writables.flatMap((x) => {
                     const voice = x.container;
                     const nexts = x.value.getNextSteps(this.score, x);
+
                     // const debug: [number, string][] = [];
                     const result = nexts.flatMap(({ measure, cost }) => {
                         const newVoice = voice.replaceMeasure(x.index, measure);
@@ -188,6 +189,7 @@ export class CounterpointContext {
                     // Debug.trace(voice.name, '[', x.index, ']:', x.value.hash(), '->',
                     //     debug.sort((a, b) => a[0] - b[0]));
                     return result;
+                    // return shuffle(result);
                 });
             }
 

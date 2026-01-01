@@ -5,18 +5,22 @@ import { NoteLike, MeasureLike, VoiceLike } from "./Types";
 export function pitch(x: H.Pitch) {
     return {
         step: 'CDEFGAB'[x.index],
-        alter: `${x.acci.value()}`,
-        octave: `${x.period}`,
+        alter: x.acci.value(),
+        octave: x.period,
     }
 };
 
 export function note(n: NoteLike) {
     if (n.pitch) return {
         pitch: pitch(n.pitch),
-        duration: `${n.duration.value()}`
+        duration: n.duration.value(),
+        lyric: (typeof n.isNonHarmonic == 'string')
+            ? {
+                text: n.isNonHarmonic
+            } : undefined
     }; else return {
         rest: {},
-        duration: `${n.duration.value()}`
+        duration: n.duration.value()
     };
 }
 

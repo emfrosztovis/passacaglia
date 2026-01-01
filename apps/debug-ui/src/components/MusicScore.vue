@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, useTemplateRef } from 'vue';
+import { onMounted, useTemplateRef, watch } from 'vue';
 import { OpenSheetMusicDisplay as OSMD } from 'opensheetmusicdisplay';
 
 defineOptions({
@@ -34,9 +34,16 @@ onMounted(() => {
         drawTitle: false,
         autoResize: props.autoResize
     });
-    osmd.load(props.file).then(() => osmd!.render());
+    if (props.file)
+        osmd.load(props.file).then(() => osmd!.render());
   }
 });
+
+watch(props, (x) => {
+    if (osmd) {
+        osmd.load(x.file).then(() => osmd!.render());
+    }
+})
 </script>
 
 <style lang="css" scoped>

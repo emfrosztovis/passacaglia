@@ -1,4 +1,4 @@
-import { Debug } from "common";
+import { Debug, HashMap } from "common";
 import { CandidateRule } from "../Context";
 
 /**
@@ -8,7 +8,7 @@ export const enforcePassingTones: CandidateRule = (_ctx, _s, cur, c) => {
     Debug.assert(c !== null);
     const p1 = cur.prevGlobal();
     const prev = p1?.value;
-    if (!prev?.pitch || !prev.attrs.isPassingTone) return c;
+    if (!prev?.pitch || prev.type != 'passing_tone') return c;
 
     const p2 = p1!.prevGlobal();
     const prev2 = p2?.value;
@@ -26,7 +26,7 @@ export const makePassingTone: CandidateRule = (_ctx, _s, cur, c) => {
     Debug.assert(c !== null);
     const p1 = cur.prevGlobal();
     const prev = p1?.value;
-    if (!prev?.pitch) return c;
+    if (!prev?.pitch) return new HashMap();
 
     return c.filter((p) => {
         const dist = prev.pitch!.distanceTo(p).abs().value();

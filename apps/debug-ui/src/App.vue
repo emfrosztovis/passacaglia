@@ -1,74 +1,33 @@
 <script setup lang="ts">
-import { CounterpointContext, CounterpointScoreBuilder, FirstSpecies, parseNotes, play, Rules, SecondSpecies, ThirdSpecies } from 'species-counterpoint';
+import { play, type Score } from 'species-counterpoint';
 import MusicScore from './components/MusicScore.vue';
-import { Debug, LogLevel, Rational } from 'common';
-import { StandardHeptatonic } from 'core';
 import { ref } from 'vue';
-import { Clef, toMxl } from 'musicxml';
 
-const ctx = new CounterpointContext(
-    14, // targetMeasures
-    {
-        measureLength: new Rational(4)
+import Main from './Main.worker?worker';
+import type { MainMessage } from './Main.worker';
+import { Debug } from 'common';
+
+let source = ref('');
+let result: Score | undefined;
+
+const worker = new Main();
+worker.onmessage = (ev: MessageEvent<MainMessage>) => {
+    switch (ev.data.type) {
+        case 'ok':
+            // result = ev.data.result;
+            source.value = ev.data.source;
+            break;
+        case 'no-solution':
+            console.log('no solution');
+            break;
+        case 'log':
+            console.log(...ev.data.message);
+            break;
+        default:
+            Debug.never(ev.data);
     }
-);
-
-ctx.localRules = [
-    Rules.limitConsecutiveLeaps,
-    Rules.forbidPerfectsBySimilarMotion,
-    // Rules.forbidNearbyPerfects,
-    Rules.forbidVoiceOverlapping,
-    Rules.prioritizeVoiceMotion,
-];
-
-ctx.candidateRules = [
-    Rules.enforceScaleTones(
-        StandardHeptatonic.Scales.C.major),
-    Rules.enforcePassingTones,
-    Rules.enforceMelodyIntervals,
-    Rules.enforceDirectionalDegreeMatrix(
-        StandardHeptatonic.Scales.C.major,
-        Rules.DegreeMatrixPreset.major),
-    Rules.enforceLeapPreparationBefore,
-    Rules.enforceLeapPreparationAfter,
-];
-
-ctx.advanceReward = 100;
-
-ctx.allowUnison = false;
-
-const score = new CounterpointScoreBuilder(ctx)
-    .soprano(ThirdSpecies)
-    // .alto(SecondSpecies)
-    // .tenor(SecondSpecies)
-    .tenor(SecondSpecies)
-    .cantus(Clef.Bass, [
-        parseNotes(['c3', ctx.parameters.measureLength]),
-        parseNotes(['d3', ctx.parameters.measureLength]),
-        parseNotes(['e3', ctx.parameters.measureLength]),
-        parseNotes(['g3', ctx.parameters.measureLength]),
-        parseNotes(['f3', ctx.parameters.measureLength]),
-        parseNotes(['d3', ctx.parameters.measureLength]),
-        parseNotes(['b2', ctx.parameters.measureLength]),
-        parseNotes(['c3', ctx.parameters.measureLength]),
-        parseNotes(['d3', ctx.parameters.measureLength]),
-        parseNotes(['e3', ctx.parameters.measureLength]),
-        parseNotes(['g3', ctx.parameters.measureLength]),
-        parseNotes(['f3', ctx.parameters.measureLength]),
-        parseNotes(['d3', ctx.parameters.measureLength]),
-        parseNotes(['b2', ctx.parameters.measureLength]),
-    ])
-    .build();
-
-Debug.level = LogLevel.Trace;
-const result = ctx.solve(score);
-console.log(result?.toString());
-
-const source = ref('');
-
-if (result) {
-    source.value = toMxl.score(result.voices);
 }
+
 </script>
 
 <template v-if="source">

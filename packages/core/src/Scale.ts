@@ -1,9 +1,8 @@
-import { AsRational, Debug } from "common";
+import { AsRational, Debug, rotateArray } from "common";
 import { Interval } from "./Interval";
 import { Pitch } from "./Pitch";
 import { PitchSystem } from "./PitchSystem";
 import { Degree } from "./Degree";
-import { rotateArray } from "./Utils";
 
 /**
  * Represents a scale in a pitch system, starting from a given pitch class (the root) and consisting of several degrees. Notably, we allow enharmonically equal tones in the scale. This is to accomodate spelling alternatives (as in the chromatic scale).

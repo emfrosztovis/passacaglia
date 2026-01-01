@@ -4,6 +4,7 @@ import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
 import { enforceVerticalConsonanceStrict } from "./rules/VerticalConsonance";
 import { makePassingTone } from "./rules/PassingTone";
+import { makeNeighborTone } from "./rules";
 
 class SecondSpeciesMeasure extends CounterpointMeasure {
     get writable() {
@@ -21,7 +22,7 @@ class SecondSpeciesMeasure extends CounterpointMeasure {
         const len = ctx.parameters.measureLength.div(2);
         super([
             new Note(len, p0),
-            new Note(len, p1, { isPassingTone })
+            new Note(len, p1, isPassingTone ? 'passing_tone' : undefined)
         ], ctx, mc);
     }
 
@@ -36,13 +37,13 @@ class SecondSpeciesMeasure extends CounterpointMeasure {
             if (c.index == 0) {
                 // start first measure from the upbeat
                 return this.ctx.fillIn(
-                    [enforceVerticalConsonanceStrict], s, this.atWithParent(1, c), {},
+                    [enforceVerticalConsonanceStrict], s, this.atWithParent(1, c), undefined,
                     (p) => new SecondSpeciesMeasure(this.ctx,
                         this.ctx.updateMelodicContext(this.melodicContext, p),
                         null, p));
             } else {
                 return this.ctx.fillIn(
-                    [enforceVerticalConsonanceStrict], s, this.atWithParent(0, c), {},
+                    [enforceVerticalConsonanceStrict], s, this.atWithParent(0, c), undefined,
                     (p) => new SecondSpeciesMeasure(this.ctx,
                         this.ctx.updateMelodicContext(this.melodicContext, p),
                         p, null));
@@ -52,10 +53,17 @@ class SecondSpeciesMeasure extends CounterpointMeasure {
         if (this.p1 == null) {
             const next: { measure: CounterpointMeasure; cost: number }[] = [];
 
-            // passing tones
+            // non-harmonic tones
+            next.push(...this.ctx.fillIn(
+                [makeNeighborTone], s,
+                this.atWithParent(1, c), 'neighbor',
+                (p) => new SecondSpeciesMeasure(this.ctx,
+                    this.ctx.updateMelodicContext(this.melodicContext, p),
+                    this.p0, p, true)));
+
             next.push(...this.ctx.fillIn(
                 [makePassingTone], s,
-                this.atWithParent(1, c), { isPassingTone: true },
+                this.atWithParent(1, c), 'passing_tone',
                 (p) => new SecondSpeciesMeasure(this.ctx,
                     this.ctx.updateMelodicContext(this.melodicContext, p),
                     this.p0, p, true)));
@@ -63,7 +71,7 @@ class SecondSpeciesMeasure extends CounterpointMeasure {
             // non-passing tones
             next.push(...this.ctx.fillIn(
                 [enforceVerticalConsonanceStrict], s,
-                this.atWithParent(1, c), {},
+                this.atWithParent(1, c), undefined,
                 (p) => new SecondSpeciesMeasure(this.ctx,
                     this.ctx.updateMelodicContext(this.melodicContext, p),
                     this.p0, p)));

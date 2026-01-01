@@ -1,6 +1,6 @@
 import { AsRational, Debug, Rational } from 'common';
-import { Cursor, DurationalElement, StandardHeptatonic as H, SequentialContainer } from 'core';
-import { Clef } from 'musicxml';
+import { Cursor, DurationalElement, StandardHeptatonic as H, SequentialContainer, SequentialCursor } from 'core';
+import { Clef, NoteLike } from 'musicxml';
 
 export { StandardHeptatonic as H } from 'core';
 export const P = H.Pitch;
@@ -20,35 +20,41 @@ export function parseNotes(...notes: [string, AsRational][]) {
     return n;
 }
 
-export type NoteAttributes = {
-    /**
-     * Whether the note is a passing tone.
-     */
-    isPassingTone?: boolean;
-    /**
-     * Whether the note is tied to the previous one.
-     */
-    isTied?: boolean;
-}
+export type NonHarmonicType = 'passing_tone' | 'suspension' | 'neighbor';
 
-export class Note implements DurationalElement {
+export class Note implements DurationalElement, NoteLike {
     duration: Rational;
 
     /**
      * `null` means either it is not filled in, or it's a rest
      */
     pitch: H.Pitch | null;
-    attrs: NoteAttributes;
 
-    constructor(d: Rational, p?: H.Pitch | null, attrs?: NoteAttributes) {
+    type?: NonHarmonicType;
+
+    get isNonHarmonic() {
+        return this.type == 'neighbor' ? 'N'
+             : this.type == 'passing_tone' ? 'P'
+             : this.type == 'suspension' ? 'S'
+             : this.type === undefined ? false
+             : Debug.never(this.type);
+    }
+
+    get isTied() {
+        return this.type == 'suspension';
+    }
+
+    constructor(d: Rational, p?: H.Pitch | null, type?: NonHarmonicType) {
         this.duration = d;
         this.pitch = p ?? null;
-        this.attrs = attrs ?? {};
+        this.type = type;
     }
 }
 
-export type MeasureCursor = Cursor<Measure, Voice, never>;
-export type NoteCursor = Cursor<Note, Measure, MeasureCursor>;
+export type MeasureCursor = SequentialCursor<Measure, Voice, never>;
+
+// @ts-expect-error
+export type NoteCursor = SequentialCursor<Note, Measure, MeasureCursor>;
 
 export abstract class Measure
     extends SequentialContainer<Note>
@@ -72,7 +78,7 @@ export abstract class Measure
     }
 
     toString(): string {
-        return this.elements.map((x) => `${x.pitch}${x.attrs.isPassingTone ? '!' : ''}`).join(' ');
+        return this.elements.map((x) => `${x.pitch}${x.type == 'passing_tone' ? '!' : ''}`).join(' ');
     }
 }
 
@@ -88,7 +94,7 @@ export abstract class Voice<M extends Measure = Measure> extends SequentialConta
     abstract readonly clef: Clef;
     abstract clone(): this;
 
-    noteAt(t: AsRational) {
+    noteAt(t: AsRational): NoteCursor | undefined {
         t = Rational.from(t);
         const m = this.cursorAtTime(t);
         if (!m) return undefined;

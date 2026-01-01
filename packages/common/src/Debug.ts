@@ -12,7 +12,11 @@ export enum LogLevel {
 export type Logger =
     (level: LogLevel, message: unknown[], location?: string) => void | Promise<void>;
 
-export let LOGGER: Logger = (level, m, _loc) => {
+export function setLogger(l: Logger) {
+    LOGGER = l;
+}
+
+let LOGGER: Logger = (level, m, _loc) => {
     if (Debug.level > level) return;
 
     let func: (...args: unknown[]) => void;

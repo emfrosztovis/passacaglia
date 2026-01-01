@@ -1,7 +1,6 @@
-import { AsRational, Debug, Hashable, Rational } from "common";
+import { AsRational, Debug, Hashable, modulo, Rational } from "common";
 import { PitchSystem } from "./PitchSystem";
 import { Interval } from "./Interval";
-import { modulo } from "./Utils";
 
 export type PitchConstructor<S extends PitchSystem, P extends Pitch<S> = Pitch<S>> = {
     new (deg: number, acci: AsRational, period?: number): P;

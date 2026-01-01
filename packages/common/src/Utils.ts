@@ -1,4 +1,4 @@
-import { Debug } from "common";
+import { Debug } from "./Debug";
 
 /**
  * Standard mathematical modulo (handles negative numbers correctly).

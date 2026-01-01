@@ -5,10 +5,10 @@ import { CandidateRule, LocalRule } from "../Context";
 /**
  * Only allow melodic intervals specified in CounterpointContext in the melody.
  */
-export const enforceMelodyIntervals: CandidateRule = (ctx, _s, cur, c, attr) =>
+export const enforceMelodyIntervals: CandidateRule = (ctx, _s, cur, c, type) =>
 {
     Debug.assert(c !== null);
-    if (attr.isPassingTone && ctx.allowChromaticPassingTones)
+    if (type == 'passing_tone' && ctx.allowChromaticPassingTones)
         return c;
 
     const p1 = cur.prevGlobal();
