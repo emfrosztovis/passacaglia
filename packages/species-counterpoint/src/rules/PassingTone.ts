@@ -19,7 +19,8 @@ export const enforcePassingTones: CandidateRule = (_ctx, _s, cur, c) => {
 
     return c.filter((p) =>
         Math.sign(o1 - p.ord().value()) == Math.sign(o2 - o1)
-     && Math.abs(prev.pitch!.stepsTo(p)) <= 1);
+     && Math.abs(prev.pitch!.stepsTo(p)) <= 1
+     && Math.abs(prev.pitch!.distanceTo(p).value()) > 0);
 }
 
 export const makePassingTone: CandidateRule = (_ctx, _s, cur, c) => {

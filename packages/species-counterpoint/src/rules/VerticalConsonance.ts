@@ -32,7 +32,7 @@ export const enforceVerticalConsonanceWithMoving: CandidateRule
         let newCost = 0;
 
         for (const x of otherPitches) {
-            const int = x.intervalTo(p).toSimple().abs();
+            const int = x.intervalTo(p).toSimple({ preserveUpToSteps: 7 }).abs();
             const c2 = ctx.harmonyIntervals.get(int);
             if (c2 === undefined) {
                 c.delete(p);

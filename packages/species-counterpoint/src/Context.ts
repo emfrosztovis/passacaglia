@@ -1,6 +1,6 @@
-import { Debug } from "common";
+import { Debug, shuffle } from "common";
 import { AStar, AStarNode } from "./AStar";
-import { Score, Parameters, NonHarmonicType } from "./Common";
+import { Score, Parameters, NonHarmonicType, Note } from "./Common";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice, MelodicContext } from "./Basic";
 import { HashMap } from "common";
 import { parsePreferred } from "./rules/Scales";
@@ -24,14 +24,16 @@ export class CounterpointContext {
     globalRules: GlobalRule[] = [];
     candidateRules: CandidateRule[] = [];
 
-    advanceReward = 20;
+    nonHarmonicToneRules: Partial<Record<NonHarmonicType, CandidateRule[]>> = {};
+    harmonicToneRules: CandidateRule[] = [];
 
+    advanceReward = 20;
     similarMotionCost = 10;
     obliqueMotionCost = 0;
     contraryMotionCost = -10;
 
     harmonyIntervals = parsePreferred(
-        ['m3', 0], ['M3', 0], ['m6', 0], ['M6', 0], ['P4', 10], ['P5', 20], ['P1', 50]);
+        ['m3', 0], ['M3', 0], ['m6', 0], ['M6', 0], ['P4', 10], ['P5', 20], ['P8', 50], ['P1', 100]);
 
     melodicIntervals = parsePreferred(
         ['m2',    0], ['M2',    0], ['-m2',  30], ['-M2',  30],
@@ -40,14 +42,13 @@ export class CounterpointContext {
         ['P5',   60],               ['-P5',  60],
         ['m6',   70], ['M6',   70], ['-m6',  70], ['-M6',  70],
         ['P8',   80],               ['-P8',  80],
-        ['P1', 1000],
+        ['P1', 100],
     );
 
     forbidWithBass = [H.Interval.parse('P4')!];
-
-    allowChromaticPassingTones = false;
-
     allowUnison = false;
+
+    stochastic = false;
 
     updateMelodicContext(old: MelodicContext, p: H.Pitch): MelodicContext {
         if (old.lastPitch === undefined) return {
@@ -87,19 +88,50 @@ export class CounterpointContext {
         type?: NonHarmonicType
     ) {
         let candidates: HashMap<H.Pitch, number> | null = null;
-        for (const r of [...this.candidateRules, ...rules]) {
-            candidates = r(this, s, current, candidates, type);
+        for (const rule of [...this.candidateRules, ...rules]) {
+            candidates = rule(this, s, current, candidates, type);
             if (candidates.size == 0) return candidates;
         }
         Debug.assert(candidates !== null);
         return candidates;
     }
 
-    fillIn(
+    fillNonHarmonicTone(
+        types: NonHarmonicType[],
+        s: Score, note: CounterpointNoteCursor,
+        create: (n: Note, p: H.Pitch) => CounterpointMeasure,
+        costOffset = 0
+    ){
+        const results: {
+            measure: CounterpointMeasure;
+            cost: number;
+        }[] = [];
+
+        for (const type of types) {
+            const rules = this.nonHarmonicToneRules[type];
+            if (!rules) {
+                Debug.info('no rules for', type);
+                continue;
+            }
+            results.push(...this.fillIn(rules, s, note, type, create, costOffset));
+        }
+
+        return results;
+    }
+
+    fillHarmonicTone(
+        s: Score, note: CounterpointNoteCursor,
+        create: (n: Note, p: H.Pitch) => CounterpointMeasure,
+        costOffset = 0
+    ){
+        return this.fillIn(this.harmonicToneRules, s, note, undefined, create, costOffset);
+    }
+
+    private fillIn(
         rules: CandidateRule[],
         s: Score, note: CounterpointNoteCursor,
         type: NonHarmonicType | undefined,
-        create: (p: H.Pitch) => CounterpointMeasure,
+        create: (n: Note, p: H.Pitch) => CounterpointMeasure,
         costOffset = 0,
     ) {
         const measure = note.parent;
@@ -107,7 +139,7 @@ export class CounterpointContext {
         const candidates = [...this.getCandidates(rules, s, note, type).entries()];
 
         return candidates.flatMap(([p, cost]) => {
-            const m = create(p);
+            const m = create(new Note(note.duration, p, type), p);
             const newVoice = voice.replaceMeasure(measure.index, m);
             const newScore = s.replaceVoice(voice.index, newVoice);
             const newCursor = newVoice.noteAt(note.globalTime) as CounterpointNoteCursor;
@@ -129,6 +161,7 @@ export class CounterpointContext {
     solve(s: Score) {
         const ctx = this;
         let progress = 0;
+        let stochastic = this.stochastic;
 
         class Node implements AStarNode {
             readonly isGoal: boolean;
@@ -171,7 +204,7 @@ export class CounterpointContext {
                     const voice = x.container;
                     const nexts = x.value.getNextSteps(this.score, x);
 
-                    // const debug: [number, string][] = [];
+                    const debug: [number, string][] = [];
                     const result = nexts.flatMap(({ measure, cost }) => {
                         const newVoice = voice.replaceMeasure(x.index, measure);
                         const newScore = this.score.replaceVoice(voice.index, newVoice);
@@ -179,7 +212,7 @@ export class CounterpointContext {
                         if (ctx.globalRules.find((x) => x(ctx, newScore) !== null))
                             return [];
                         else {
-                            // debug.push([cost, measure.hash()]);
+                            debug.push([cost, measure.hash()]);
                             return {
                                 node: new Node(newScore,
                                     this.measureIndex, this.hCost - ctx.advanceReward),
@@ -188,9 +221,8 @@ export class CounterpointContext {
                         }
                     });
                     // Debug.trace(voice.name, '[', x.index, ']:', x.value.hash(), '->',
-                    //     debug.sort((a, b) => a[0] - b[0]));
-                    return result;
-                    // return shuffle(result);
+                    //     debug.sort((a, b) => a[0] - b[0]).join(' / '));
+                    return stochastic ? shuffle(result) : result;
                 });
             }
 

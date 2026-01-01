@@ -2,9 +2,6 @@ import { Debug, Rational } from "common";
 import { Score, Note } from "./Common";
 import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
-import { enforceVerticalConsonanceStrict, enforceVerticalConsonanceWithMoving } from "./rules/VerticalConsonance";
-import { makePassingTone } from "./rules/PassingTone";
-import { makeNeighborTone } from "./rules";
 
 class ThirdSpeciesMeasure extends CounterpointMeasure {
     get writable() {
@@ -33,38 +30,25 @@ class ThirdSpeciesMeasure extends CounterpointMeasure {
         const next: { measure: CounterpointMeasure; cost: number }[] = [];
         Debug.assert(ci !== undefined);
 
+        next.push(...this.ctx.fillHarmonicTone(s, ci,
+            (n, p) => {
+                const e = [...this.elements];
+                e.splice(ci.index, 1, n);
+                return new ThirdSpeciesMeasure(this.ctx,
+                    this.ctx.updateMelodicContext(this.melodicContext, p), e);
+            }));
+
         // non-harmonic tone (not on the first beat)
         if (ci.index !== 0 && !(c.index == 0 && ci.index == 1)) {
-            next.push(...this.ctx.fillIn(
-                [makeNeighborTone, enforceVerticalConsonanceWithMoving], s,
-                ci, 'neighbor',
-                (p) => {
+            next.push(...this.ctx.fillNonHarmonicTone(['neighbor', 'passing_tone'],
+                s, ci,
+                (n, p) => {
                     const e = [...this.elements];
-                    e.splice(ci.index, 1, new Note(new Rational(1), p, 'neighbor'));
-                    return new ThirdSpeciesMeasure(this.ctx,
-                        this.ctx.updateMelodicContext(this.melodicContext, p), e);
-                }));
-
-            next.push(...this.ctx.fillIn(
-                [makePassingTone, enforceVerticalConsonanceWithMoving], s,
-                ci, 'passing_tone',
-                (p) => {
-                    const e = [...this.elements];
-                    e.splice(ci.index, 1, new Note(new Rational(1), p, 'passing_tone'));
+                    e.splice(ci.index, 1, n);
                     return new ThirdSpeciesMeasure(this.ctx,
                         this.ctx.updateMelodicContext(this.melodicContext, p), e);
                 }));
         }
-
-        // non-passing tone
-        next.push(...this.ctx.fillIn(
-            [enforceVerticalConsonanceStrict], s, ci, undefined,
-            (p) => {
-                    const e = [...this.elements];
-                    e.splice(ci.index, 1, new Note(new Rational(1), p));
-                    return new ThirdSpeciesMeasure(this.ctx,
-                        this.ctx.updateMelodicContext(this.melodicContext, p), e);
-            }));
 
         return next;
     }

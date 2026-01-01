@@ -8,8 +8,8 @@ import { CandidateRule, LocalRule } from "../Context";
 export const enforceMelodyIntervals: CandidateRule = (ctx, _s, cur, c, type) =>
 {
     Debug.assert(c !== null);
-    if (type == 'passing_tone' && ctx.allowChromaticPassingTones)
-        return c;
+    // if (type == 'passing_tone' && ctx.allowChromaticPassingTones)
+    //     return c;
 
     const p1 = cur.prevGlobal();
     const prev = p1?.value;

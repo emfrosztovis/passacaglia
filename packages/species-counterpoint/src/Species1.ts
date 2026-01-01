@@ -1,8 +1,6 @@
 import { Score, Note } from "./Common";
 import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
-import { enforceVerticalConsonanceStrict } from "./rules/VerticalConsonance";
-import { H } from "./Internal";
 
 class FirstSpeciesMeasure extends CounterpointMeasure {
     get writable() {
@@ -12,9 +10,9 @@ class FirstSpeciesMeasure extends CounterpointMeasure {
     constructor(
         ctx: CounterpointContext,
         mc: MelodicContext,
-        p0: H.Pitch | null = null
+        p0: Note = new Note(ctx.parameters.measureLength)
     ) {
-        super([new Note(ctx.parameters.measureLength, p0)], ctx, mc);
+        super([p0], ctx, mc);
     }
 
     hash(): string {
@@ -24,10 +22,9 @@ class FirstSpeciesMeasure extends CounterpointMeasure {
     getNextSteps(
         s: Score, c: CounterpointMeasureCursor
     ): { measure: CounterpointMeasure; cost: number }[] {
-        const rules = [enforceVerticalConsonanceStrict];
-        return this.ctx.fillIn(rules, s, this.atWithParent(0, c), undefined,
-            (p) => new FirstSpeciesMeasure(this.ctx,
-                this.ctx.updateMelodicContext(this.melodicContext, p), p));
+        return this.ctx.fillHarmonicTone(s, this.atWithParent(0, c),
+            (n, p) => new FirstSpeciesMeasure(this.ctx,
+                this.ctx.updateMelodicContext(this.melodicContext, p), n));
     }
 }
 

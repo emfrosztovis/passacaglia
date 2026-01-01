@@ -48,10 +48,10 @@ export const DegreeMatrixPreset = {
 export const enforceDirectionalDegreeMatrix: (scale: H.Scale, m: DegreeMatrix) => CandidateRule =
 (scale, m) => (_ctx, _s, cur, c) => {
     Debug.assert(c !== null);
-    const prev = cur.prev();
+    const prev = cur.prevGlobal();
     if (!prev?.value.pitch) return c;
 
-    const prev2 = prev.prev();
+    const prev2 = prev.prevGlobal();
     if (!prev2?.value.pitch) return c;
 
     const sign = Math.sign(prev2.value.pitch.distanceTo(prev.value.pitch).value());

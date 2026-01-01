@@ -1,4 +1,3 @@
-import { CounterpointNoteCursor } from "../Basic";
 import { NoteCursor } from "../Common";
 
 export function isStepwiseBefore(c: NoteCursor): boolean | undefined {

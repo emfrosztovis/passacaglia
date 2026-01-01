@@ -44,7 +44,7 @@ export const forbidPerfectsBySimilarMotion: LocalRule = (_ctx, s, x1) => {
  *
  * If the second consonance is not so:
  * - only when the first consonance is on the same beat at the second
- * - and NO notes are non-harmonic tones, (NOT IMPLEMENTED) or surrounded by stepwise motion
+ * - and NO notes are non-harmonic tones, or surrounded by stepwise motion
  * - (NOT IMPLEMENTED) and IF the two notes of the second consonance don't start simultaneously, only when they are NOT in contrary motion.
  */
 export const forbidNearbyPerfects: LocalRule = (ctx, s, x1) => {

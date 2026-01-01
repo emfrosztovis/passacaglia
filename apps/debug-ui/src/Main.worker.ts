@@ -1,4 +1,4 @@
-import { CounterpointContext, CounterpointScoreBuilder, FirstSpecies, parseNotes, Rules, Score, SecondSpecies, ThirdSpecies, VoiceData } from 'species-counterpoint';
+import { CounterpointContext, CounterpointScoreBuilder, FirstSpecies, parseNotes, Rules, SecondSpecies, ThirdSpecies, VoiceData } from 'species-counterpoint';
 import { Debug, LogLevel, Rational, setLogger, type Serialized } from 'common';
 import { StandardHeptatonic } from 'core';
 import { Clef, toMxl } from 'musicxml';
@@ -32,14 +32,29 @@ ctx.candidateRules = [
     Rules.enforceLeapPreparationAfter,
 ];
 
-ctx.advanceReward = 100;
+ctx.harmonicToneRules = [
+    Rules.enforceVerticalConsonanceStrict
+];
 
-ctx.allowUnison = false;
+ctx.nonHarmonicToneRules = {
+    'neighbor': [
+        Rules.makeNeighborTone,
+        Rules.enforceVerticalConsonanceWithMoving
+    ],
+    'passing_tone': [
+        Rules.makePassingTone,
+        Rules.enforceVerticalConsonanceWithMoving
+    ],
+};
+
+ctx.advanceReward = 50;
+// ctx.allowUnison = true;
+// ctx.stochastic = true;
 
 const score = new CounterpointScoreBuilder(ctx)
-    .soprano(ThirdSpecies)
+    // .soprano(ThirdSpecies)
     .alto(SecondSpecies)
-    // .tenor(FirstSpecies)
+    .tenor(FirstSpecies)
     .cantus(Clef.Bass, [
         parseNotes(['c3', ctx.parameters.measureLength]),
         parseNotes(['d3', ctx.parameters.measureLength]),

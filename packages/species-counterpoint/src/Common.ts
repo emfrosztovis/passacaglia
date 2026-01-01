@@ -1,4 +1,4 @@
-import { AsRational, Debug, Rational, Serializable, Serialized } from 'common';
+import { AsRational, Debug, Hashable, Rational, Serializable, Serialized } from 'common';
 import { Cursor, DurationalElement, StandardHeptatonic as H, SequentialContainer, SequentialCursor } from 'core';
 import { Clef, NoteLike } from 'musicxml';
 
@@ -15,7 +15,7 @@ export function parseNotes(...notes: [string, AsRational][]) {
 
 export type NonHarmonicType = 'passing_tone' | 'suspension' | 'neighbor';
 
-export class Note implements DurationalElement, NoteLike, Serializable {
+export class Note implements DurationalElement, NoteLike, Serializable, Hashable {
     duration: Rational;
 
     /**
@@ -24,6 +24,10 @@ export class Note implements DurationalElement, NoteLike, Serializable {
     pitch: H.Pitch | null;
 
     type?: NonHarmonicType;
+
+    hash(): string {
+        return `${this.duration.hash()},${this.pitch?.hash()},${this.type}`;
+    }
 
     serialize() {
         return [this.duration.serialize(), this.pitch?.serialize(), this.type] as const;
@@ -76,10 +80,7 @@ export abstract class Measure
     abstract hash(): string;
 
     protected hashNotes(): string {
-        return this.elements.map((x) => {
-            const p = x.pitch ? x.pitch.ord().toString() : '_';
-            return `${p},${x.duration}`;
-        }).join(';');
+        return this.elements.map((x) => x.hash()).join(';');
     }
 
     toString(): string {
