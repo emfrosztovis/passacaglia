@@ -2,7 +2,7 @@ import { Debug, Rational } from "common";
 import { Score, Note } from "./Common";
 import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
-import { enforceVerticalConsonanceStrict } from "./rules/VerticalConsonance";
+import { enforceVerticalConsonanceStrict, enforceVerticalConsonanceWithMoving } from "./rules/VerticalConsonance";
 import { makePassingTone } from "./rules/PassingTone";
 import { makeNeighborTone } from "./rules";
 
@@ -36,7 +36,7 @@ class ThirdSpeciesMeasure extends CounterpointMeasure {
         // non-harmonic tone (not on the first beat)
         if (ci.index !== 0 && !(c.index == 0 && ci.index == 1)) {
             next.push(...this.ctx.fillIn(
-                [makeNeighborTone], s,
+                [makeNeighborTone, enforceVerticalConsonanceWithMoving], s,
                 ci, 'neighbor',
                 (p) => {
                     const e = [...this.elements];
@@ -46,7 +46,7 @@ class ThirdSpeciesMeasure extends CounterpointMeasure {
                 }));
 
             next.push(...this.ctx.fillIn(
-                [makePassingTone], s,
+                [makePassingTone, enforceVerticalConsonanceWithMoving], s,
                 ci, 'passing_tone',
                 (p) => {
                     const e = [...this.elements];

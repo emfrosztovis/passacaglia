@@ -2,7 +2,7 @@ import { Debug } from "common";
 import { Score, Note } from "./Common";
 import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
-import { enforceVerticalConsonanceStrict } from "./rules/VerticalConsonance";
+import { enforceVerticalConsonanceStrict, enforceVerticalConsonanceWithMoving } from "./rules/VerticalConsonance";
 import { makePassingTone } from "./rules/PassingTone";
 import { makeNeighborTone } from "./rules";
 import { H } from "./Internal";
@@ -56,14 +56,14 @@ class SecondSpeciesMeasure extends CounterpointMeasure {
 
             // non-harmonic tones
             next.push(...this.ctx.fillIn(
-                [makeNeighborTone], s,
+                [makeNeighborTone, enforceVerticalConsonanceWithMoving], s,
                 this.atWithParent(1, c), 'neighbor',
                 (p) => new SecondSpeciesMeasure(this.ctx,
                     this.ctx.updateMelodicContext(this.melodicContext, p),
                     this.p0, p, true)));
 
             next.push(...this.ctx.fillIn(
-                [makePassingTone], s,
+                [makePassingTone, enforceVerticalConsonanceWithMoving], s,
                 this.atWithParent(1, c), 'passing_tone',
                 (p) => new SecondSpeciesMeasure(this.ctx,
                     this.ctx.updateMelodicContext(this.melodicContext, p),
