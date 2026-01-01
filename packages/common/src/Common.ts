@@ -1,9 +1,18 @@
 /**
- * Represents a hashable type. `passacaglia` uses a lot of immutable data types, and implementing `Hashable` enables them to be used in `HashMap`s.
+ * Represents a hashable type. We use a lot of immutable data types; implementing `Hashable` enables them to be used in `HashMap`s.
  */
 export interface Hashable {
     hash(): string;
 }
+
+/**
+ * Represents a serializable type, useful for persistent storage or messaging between web workers.
+ */
+export interface Serializable {
+    serialize(): any;
+}
+
+export type Serialized<T extends Serializable> = ReturnType<T['serialize']>;
 
 /**
  * A generic hash map, or a hash set if `V` is `void`.

@@ -1,4 +1,4 @@
-import { H } from "../Common";
+import { H } from "../Internal";
 import { LocalRule } from "../Context";
 import { isStepwiseAround } from "./Utils";
 

@@ -1,5 +1,5 @@
 import { Debug, HashMap } from "common";
-import { H } from "../Common";
+import { H } from "../Internal";
 import { CandidateRule, LocalRule } from "../Context";
 
 /**

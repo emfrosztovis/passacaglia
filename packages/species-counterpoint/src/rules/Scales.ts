@@ -1,5 +1,6 @@
 import { Debug } from "common";
-import { H, Scales } from "../Common";
+import { H } from "../Internal";
+import { Scales } from '../Internal';
 import { CandidateRule } from "../Context";
 import { HashMap } from "common";
 

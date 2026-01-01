@@ -1,4 +1,4 @@
-import { Score } from "./Common";
+import { Score, Voice } from "./Common";
 
 type Event = {
     type: 'on',
@@ -17,7 +17,7 @@ export type PlayOptions = {
     synth?: boolean
 }
 
-export async function play(s: Score, instrs: number[], opts?: PlayOptions) {
+export async function play(voices: readonly Voice[], instrs: number[], opts?: PlayOptions) {
     const JZZ = (await import('jzz')).default;
 
     let name: string | undefined;
@@ -37,7 +37,7 @@ export async function play(s: Score, instrs: number[], opts?: PlayOptions) {
 
     let i = 0;
     while (true) {
-        const measures = s.voices.flatMap((x) => {
+        const measures = voices.flatMap((x) => {
             const m = x.at(i);
             return m ? [m] : [];
         });

@@ -1,5 +1,5 @@
 import { Debug } from "common";
-import { H } from "../Common";
+import { H } from "../Internal";
 import { CandidateRule } from "../Context";
 
 /**

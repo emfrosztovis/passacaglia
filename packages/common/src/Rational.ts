@@ -1,4 +1,4 @@
-import { Hashable } from "./Common";
+import { Hashable, Serializable } from "./Common";
 import { Debug } from "./Debug";
 
 function gcd(a: number, b: number): number {
@@ -14,7 +14,7 @@ export class InvalidRationalError extends Error {
 
 export type AsRational = number | Rational;
 
-export class Rational implements Hashable {
+export class Rational implements Hashable, Serializable {
     readonly num: number;
     readonly den: number;
 
@@ -58,6 +58,14 @@ export class Rational implements Hashable {
 
     static array(x: AsRational[], eps = 0.00001): Rational[] {
         return x.map((x) => Rational.from(x, eps));
+    }
+
+    serialize() {
+        return [this.num, this.den] as const;
+    }
+
+    static deserialize([num, den]: any): Rational {
+        return new Rational(num, den);
     }
 
     add(other: AsRational): Rational {

@@ -1,7 +1,8 @@
 import { Clef } from "musicxml";
-import { H, Measure, Note, Score, Voice } from "./Common";
+import { Measure, Note, Score, Voice } from "./Common";
 import { CounterpointContext } from "./Context";
 import { SequentialCursor } from "core";
+import { H } from "./Internal";
 
 export type CounterpointMeasureCursor = SequentialCursor<CounterpointMeasure, CounterpointVoice, never>;
 // FIXME: typechecker bug?

@@ -1,9 +1,10 @@
-import { Debug, Rational, shuffle } from "common";
-import { aStar, AStarNode } from "./AStar";
-import { Score, H, Parameters, MeasureCursor, NonHarmonicType } from "./Common";
+import { Debug } from "common";
+import { AStar, AStarNode } from "./AStar";
+import { Score, Parameters, NonHarmonicType } from "./Common";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice, MelodicContext } from "./Basic";
 import { HashMap } from "common";
-import { enforceScaleTones, parsePreferred } from "./rules/Scales";
+import { parsePreferred } from "./rules/Scales";
+import { H } from "./Internal";
 
 export type LocalRule = (
     ctx: CounterpointContext, s: Score, current: CounterpointNoteCursor
@@ -146,8 +147,8 @@ export class CounterpointContext {
 
             constructor(
                 public score: Score,
-                private measureIndex: number,
-                private hCost: number,
+                readonly measureIndex: number,
+                readonly hCost: number,
             ) {
                 this.#hash = score.hash();
                 this.#writables = [];
@@ -201,8 +202,6 @@ export class CounterpointContext {
                 return this.hCost;
             }
         }
-        const result = aStar(new Node(s, 0, 0));
-        if (!result) return null;
-        return result.path.at(-1)!.score;
+        return new AStar(new Node(s, 0, 0));
     }
 }

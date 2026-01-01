@@ -1,13 +1,6 @@
-import { AsRational, Debug, Rational } from 'common';
+import { AsRational, Debug, Rational, Serializable, Serialized } from 'common';
 import { Cursor, DurationalElement, StandardHeptatonic as H, SequentialContainer, SequentialCursor } from 'core';
 import { Clef, NoteLike } from 'musicxml';
-
-export { StandardHeptatonic as H } from 'core';
-export const P = H.Pitch;
-export const PC = H.PitchClasses;
-export const I = H.Interval;
-export const S = H.Scale;
-export const Scales = H.Scales;
 
 export function parseNotes(...notes: [string, AsRational][]) {
     const n: Note[] = [];
@@ -22,7 +15,7 @@ export function parseNotes(...notes: [string, AsRational][]) {
 
 export type NonHarmonicType = 'passing_tone' | 'suspension' | 'neighbor';
 
-export class Note implements DurationalElement, NoteLike {
+export class Note implements DurationalElement, NoteLike, Serializable {
     duration: Rational;
 
     /**
@@ -31,6 +24,18 @@ export class Note implements DurationalElement, NoteLike {
     pitch: H.Pitch | null;
 
     type?: NonHarmonicType;
+
+    serialize() {
+        return [this.duration.serialize(), this.pitch?.serialize(), this.type] as const;
+    }
+
+    static deserialize([duration, pitch, type]: Serialized<Note>): Note {
+        return new Note(
+            Rational.deserialize(duration),
+            pitch ? H.Pitch.deserialize(pitch) : null,
+            type
+        );
+    }
 
     get isNonHarmonic() {
         return this.type == 'neighbor' ? 'N'
@@ -82,6 +87,28 @@ export abstract class Measure
     }
 }
 
+export class MeasureData extends Measure implements Serializable {
+    readonly writable = false;
+
+    hash(): string {
+        return this.hashNotes();
+    }
+
+    serialize() {
+        return [this.elements.map((x) => x.serialize()), this.duration.serialize()] as const;
+    }
+
+    static deserialize([elems, duration]: Serialized<MeasureData>) {
+        return new MeasureData(
+            (elems as any[]).map((x) => Note.deserialize(x)),
+            Rational.deserialize(duration));
+    }
+
+    static from(m: Measure) {
+        return new MeasureData(m.elements, m.duration);
+    }
+}
+
 export abstract class Voice<M extends Measure = Measure> extends SequentialContainer<M> {
     constructor(
         measures: readonly M[],
@@ -109,6 +136,35 @@ export abstract class Voice<M extends Measure = Measure> extends SequentialConta
 
     toString(): string {
         return this.elements.map((x) => x.toString()).join(' | ');
+    }
+}
+
+export class VoiceData extends Voice<MeasureData> implements Serializable {
+    constructor(
+        measures: readonly MeasureData[],
+        index: number,
+        readonly name: string,
+        readonly clef: Clef,
+    ) {
+        super(measures, index);
+    }
+
+    clone(): this {
+        return new VoiceData(this.elements, this.index, this.name, this.clef) as this;
+    }
+
+    serialize() {
+        return [this.elements.map((x) => x.serialize()), this.index, this.name, this.clef] as const;
+    }
+
+    static deserialize([elems, index, name, clef]: Serialized<VoiceData>) {
+        return new VoiceData(
+            (elems as any[]).map((x) => MeasureData.deserialize(x)),
+            index, name, clef);
+    }
+
+    static from(v: Voice) {
+        return new VoiceData(v.elements.map((x) => MeasureData.from(x)), v.index, v.name, v.clef);
     }
 }
 

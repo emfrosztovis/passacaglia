@@ -1,4 +1,4 @@
-import { AsRational, Debug, Rational } from "common";
+import { AsRational, Debug, Rational, Serializable, Serialized } from "common";
 import { Interval } from "../Interval";
 import { _System, StandardHeptatonicSystem } from "./System";
 import { _Pitch } from "./Pitch";
@@ -98,9 +98,20 @@ const IntervalData: [semitones: number, q: Quality][][] = [
 /**
  * A signed interval in the standard heptatonic system.
  */
-export class _Interval extends Interval<StandardHeptatonicSystem> {
+export class _Interval
+    extends Interval<StandardHeptatonicSystem>
+    implements Serializable
+{
     constructor(steps: number, distance: AsRational, sign: 1 | -1 = 1) {
         super(_System, steps, distance, sign);
+    }
+
+    serialize() {
+        return [this.steps, this.distance.serialize(), this.sign] as const;
+    }
+
+    static deserialize([steps, dist, sign]: Serialized<_Interval>): _Interval {
+        return new _Interval(steps, Rational.deserialize(dist), sign);
     }
 
     /**

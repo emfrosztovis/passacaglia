@@ -105,7 +105,7 @@ const score = new CounterpointScoreBuilder(ctx)
 //     .build();
 
 Debug.level = LogLevel.Trace;
-const result = ctx.solve(score);
+const result = ctx.solve(score).search()?.result.score;
 console.log(result?.toString());
 if (result)
-    await play(result, [72, 72, 72, 72]);
+    await play(result.voices, [72, 72, 72, 72]);

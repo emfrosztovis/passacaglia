@@ -9,10 +9,10 @@ import { Degree } from "./Degree";
  */
 export abstract class Scale<S extends PitchSystem> {
     /** List of degrees. Always non-decreasing and spans less than the system's period. The first degree is the root. */
-    public readonly degrees: readonly Pitch<S>[];
+    abstract readonly degrees: readonly Pitch<S>[];
 
     /** List of intervals. Always nonnegative. */
-    public readonly intervals: readonly Interval<S>[];
+    abstract readonly intervals: readonly Interval<S>[];
 
     public get root() {
         return this.degrees[0];
@@ -24,8 +24,6 @@ export abstract class Scale<S extends PitchSystem> {
         degs: readonly Pitch<S>[],
     ) {
         Debug.assert(ints.length > 0 && ints.length == degs.length)
-        this.intervals = ints;
-        this.degrees = degs;
     }
 
     protected abstract _create(ints: readonly Interval<S>[], degs: readonly Pitch<S>[]): this;

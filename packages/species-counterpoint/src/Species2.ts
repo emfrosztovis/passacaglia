@@ -1,10 +1,11 @@
 import { Debug } from "common";
-import { H, Score, Note } from "./Common";
+import { Score, Note } from "./Common";
 import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
 import { enforceVerticalConsonanceStrict } from "./rules/VerticalConsonance";
 import { makePassingTone } from "./rules/PassingTone";
 import { makeNeighborTone } from "./rules";
+import { H } from "./Internal";
 
 class SecondSpeciesMeasure extends CounterpointMeasure {
     get writable() {

@@ -1,24 +1,29 @@
 <script setup lang="ts">
-import { play, type Score } from 'species-counterpoint';
+import { play, VoiceData } from 'species-counterpoint';
 import MusicScore from './components/MusicScore.vue';
 import { ref } from 'vue';
 
 import Main from './Main.worker?worker';
 import type { MainMessage } from './Main.worker';
 import { Debug } from 'common';
+import { NProgress } from 'naive-ui';
 
 let source = ref('');
-let result: Score | undefined;
+let result: VoiceData[] | undefined;
+let progress = ref([0, 0] as [number, number]);
 
 const worker = new Main();
 worker.onmessage = (ev: MessageEvent<MainMessage>) => {
     switch (ev.data.type) {
         case 'ok':
-            // result = ev.data.result;
+            result = ev.data.data.map(VoiceData.deserialize);
             source.value = ev.data.source;
             break;
         case 'no-solution':
             console.log('no solution');
+            break;
+        case 'progress':
+            progress.value = [ev.data.progress, ev.data.total];
             break;
         case 'log':
             console.log(...ev.data.message);
@@ -30,24 +35,20 @@ worker.onmessage = (ev: MessageEvent<MainMessage>) => {
 
 </script>
 
-<template v-if="source">
-    <button v-if="result" @click="play(result, [72, 72, 72, 72], { tempo: 180, synth: true })">
-        play
-    </button>
-    <MusicScore :file="source" />
+<template>
+    <div class="container">
+        <NProgress v-if="!source" type="line" :percentage="progress[0] / progress[1] * 100">
+            {{ progress[0] }} / {{ progress[1] }}
+        </NProgress>
+        <button v-if="result" @click="play(result, [72, 72, 72, 72], { tempo: 180, synth: true })">
+            play
+        </button>
+        <MusicScore v-if="source" :file="source" />
+    </div>
 </template>
 
 <style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+.container {
+    min-width: 500px;
 }
 </style>

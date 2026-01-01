@@ -1,10 +1,10 @@
-import { CounterpointContext, CounterpointScoreBuilder, FirstSpecies, parseNotes, Rules, Score, SecondSpecies, ThirdSpecies } from 'species-counterpoint';
-import { Debug, LogLevel, Rational, setLogger } from 'common';
+import { CounterpointContext, CounterpointScoreBuilder, FirstSpecies, parseNotes, Rules, Score, SecondSpecies, ThirdSpecies, VoiceData } from 'species-counterpoint';
+import { Debug, LogLevel, Rational, setLogger, type Serialized } from 'common';
 import { StandardHeptatonic } from 'core';
 import { Clef, toMxl } from 'musicxml';
 
 const ctx = new CounterpointContext(
-    8, // targetMeasures
+    15, // targetMeasures
     {
         measureLength: new Rational(4)
     }
@@ -38,9 +38,16 @@ ctx.allowUnison = false;
 
 const score = new CounterpointScoreBuilder(ctx)
     .soprano(ThirdSpecies)
-    // .alto(SecondSpecies)
-    .tenor(FirstSpecies)
+    .alto(SecondSpecies)
+    // .tenor(FirstSpecies)
     .cantus(Clef.Bass, [
+        parseNotes(['c3', ctx.parameters.measureLength]),
+        parseNotes(['d3', ctx.parameters.measureLength]),
+        parseNotes(['e3', ctx.parameters.measureLength]),
+        parseNotes(['g3', ctx.parameters.measureLength]),
+        parseNotes(['f3', ctx.parameters.measureLength]),
+        parseNotes(['d3', ctx.parameters.measureLength]),
+        parseNotes(['b2', ctx.parameters.measureLength]),
         parseNotes(['c3', ctx.parameters.measureLength]),
         parseNotes(['d3', ctx.parameters.measureLength]),
         parseNotes(['e3', ctx.parameters.measureLength]),
@@ -83,13 +90,26 @@ setLogger((level, message) => {
     } satisfies MainMessage);
 });
 
-const result = ctx.solve(score);
+const astar = ctx.solve(score);
+let progress = 0;
+astar.onProgress = (p) => {
+    if (p.current.measureIndex != progress) {
+        progress = p.current.measureIndex;
+        postMessage({
+            type: 'progress',
+            progress,
+            total: ctx.targetMeasures
+        } satisfies MainMessage);
+    }
+}
+
+const result = astar.search()?.result.score;
 console.log(result?.toString());
 
 if (result) {
     postMessage({
         type: 'ok',
-        // result,
+        data: result.voices.map((x) => VoiceData.from(x).serialize()),
         source: toMxl.score(result.voices)
     } satisfies MainMessage);
 } else {
@@ -100,7 +120,7 @@ if (result) {
 
 export type MainMessage = {
     type: 'ok',
-    // result: Score,
+    data: Serialized<VoiceData>[],
     source: string,
 } | {
     type: 'no-solution',
@@ -108,4 +128,8 @@ export type MainMessage = {
     type: 'log',
     level: LogLevel,
     message: unknown[]
+} | {
+    type: 'progress',
+    progress: number,
+    total: number
 };

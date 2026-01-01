@@ -1,7 +1,8 @@
-import { H, Score, Note } from "./Common";
+import { Score, Note } from "./Common";
 import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
 import { enforceVerticalConsonanceStrict } from "./rules/VerticalConsonance";
+import { H } from "./Internal";
 
 class FirstSpeciesMeasure extends CounterpointMeasure {
     get writable() {

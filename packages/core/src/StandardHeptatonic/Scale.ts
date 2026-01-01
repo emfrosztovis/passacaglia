@@ -1,16 +1,34 @@
-import { AsRational, Debug } from "common";
+import { AsRational, Debug, Serializable, Serialized } from "common";
 import { Degree } from "../Degree";
 import { Scale } from "../Scale";
 import { _System, StandardHeptatonicSystem } from "./System";
 import { _Pitch } from "./Pitch";
 import { Accidental } from "./Accidental";
 import { _Interval } from "./Interval";
+import { Interval } from "../Interval";
+import { Pitch } from "../Pitch";
 
 const RomanNumerals = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'];
 
-export class _Scale extends Scale<StandardHeptatonicSystem> {
+export class _Scale
+    extends Scale<StandardHeptatonicSystem>
+    implements Serializable
+{
+    readonly degrees: readonly _Pitch[];
+    readonly intervals: readonly _Interval[];
+
     protected constructor(ints: readonly _Interval[], degs: readonly _Pitch[]) {
         super(_System, ints, degs);
+        this.degrees = degs;
+        this.intervals = ints;
+    }
+
+    serialize() {
+        return this.degrees.map((x) => x.serialize());
+    }
+
+    static deserialize(degs: Serialized<_Scale>) {
+        return _Scale.fromPitches(degs.map((x) => _Pitch.deserialize(x)));
     }
 
     protected override _create(ints: readonly _Interval[], degs: readonly _Pitch[]) {

@@ -1,5 +1,20 @@
-import { createApp } from 'vue'
-import './style.css'
-import App from './App.vue'
+import { createApp } from 'vue';
+import './style.css';
+import App from './App.vue';
 
-createApp(App).mount('#app')
+import {
+  // create naive ui
+  create,
+  // component
+  NProgress
+} from 'naive-ui';
+
+const naive = create({
+    components: [
+        NProgress
+    ]
+});
+
+createApp(App)
+    .use(naive)
+    .mount('#app');
