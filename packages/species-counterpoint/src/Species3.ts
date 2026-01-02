@@ -40,7 +40,7 @@ class ThirdSpeciesMeasure extends CounterpointMeasure {
 
         // non-harmonic tone (not on the first beat)
         if (ci.index !== 0 && !(c.index == 0 && ci.index == 1)) {
-            next.push(...this.ctx.fillNonHarmonicTone(['neighbor', 'passing_tone'],
+            next.push(...this.ctx.fillNonHarmonicTone(['passing_tone', 'neighbor'],
                 s, ci,
                 (n, p) => {
                     const e = [...this.elements];

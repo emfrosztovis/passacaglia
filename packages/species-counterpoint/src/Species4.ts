@@ -3,7 +3,7 @@ import { Score, Note } from "./Common";
 import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
 
-class SecondSpeciesMeasure extends CounterpointMeasure {
+class FourthSpeciesMeasure extends CounterpointMeasure {
     get writable() {
         return this.elements[1].pitch === null;
     };
@@ -23,30 +23,41 @@ class SecondSpeciesMeasure extends CounterpointMeasure {
     }
 
     hash(): string {
-        return `sp2:${this.hashNotes()}`;
+        return `sp4:${this.hashNotes()}`;
     }
 
     getNextSteps(
         s: Score, c: CounterpointMeasureCursor
     ): { measure: CounterpointMeasure; cost: number }[] {
         if (this.elements[0].pitch == null) {
-            return this.ctx.fillHarmonicTone(s, this.atWithParent(c.index == 0 ? 1 : 0, c),
-                (n, p) => new SecondSpeciesMeasure(this.ctx,
-                    this.ctx.updateMelodicContext(this.melodicContext, p),
-                    c.index == 0 ? undefined : n,
-                    c.index == 0 ? n : undefined));
+            const next: { measure: CounterpointMeasure; cost: number }[] = [];
+            if (c.index == 0) {
+                next.push(...this.ctx.fillHarmonicTone(s,
+                    this.atWithParent(1, c),
+                    (n, p) => new FourthSpeciesMeasure(this.ctx,
+                        this.ctx.updateMelodicContext(this.melodicContext, p),
+                        undefined, n)));
+            } else {
+                next.push(...this.ctx.fillNonHarmonicTone(['suspension'],
+                    s, this.atWithParent(0, c),
+                    (n, p) => new FourthSpeciesMeasure(this.ctx,
+                        this.ctx.updateMelodicContext(this.melodicContext, p),
+                        n, undefined)));
+
+                next.push(...this.ctx.fillHarmonicTone(s,
+                    this.atWithParent(0, c),
+                    (n, p) => new FourthSpeciesMeasure(this.ctx,
+                        this.ctx.updateMelodicContext(this.melodicContext, p),
+                        n, undefined), 5000));
+            }
+            return next;
         }
 
         if (this.elements[1].pitch == null) {
             const next: { measure: CounterpointMeasure; cost: number }[] = [];
             next.push(...this.ctx.fillHarmonicTone(
                 s, this.atWithParent(1, c),
-                (n, p) => new SecondSpeciesMeasure(this.ctx,
-                    this.ctx.updateMelodicContext(this.melodicContext, p),
-                    this.elements[0], n)));
-            next.push(...this.ctx.fillNonHarmonicTone(['passing_tone', 'neighbor',],
-                s, this.atWithParent(1, c),
-                (n, p) => new SecondSpeciesMeasure(this.ctx,
+                (n, p) => new FourthSpeciesMeasure(this.ctx,
                     this.ctx.updateMelodicContext(this.melodicContext, p),
                     this.elements[0], n)));
             return next;
@@ -55,7 +66,7 @@ class SecondSpeciesMeasure extends CounterpointMeasure {
     }
 }
 
-export class SecondSpecies extends CounterpointVoice {
+export class FourthSpecies extends CounterpointVoice {
     readonly melodySettings = {
         forbidRepeatedNotes: true,
         maxConsecutiveLeaps: 2,
@@ -65,21 +76,21 @@ export class SecondSpecies extends CounterpointVoice {
     };
 
     clone() {
-        return new SecondSpecies(this.index, this.ctx,
+        return new FourthSpecies(this.index, this.ctx,
             [...this.elements], this.lowerRange, this.higherRange, this.name, this.clef) as this;
     }
 
     replaceMeasure(i: number, m: CounterpointMeasure): this {
         const e = [...this.elements];
         e.splice(i, 1, m);
-        return new SecondSpecies(this.index, this.ctx, e,
+        return new FourthSpecies(this.index, this.ctx, e,
             this.lowerRange, this.higherRange, this.name, this.clef) as this;
     }
 
     makeNewMeasure = (_s: Score, c: CounterpointMeasureCursor) => {
         const last = c.prevGlobal()?.value.melodicContext;
         return [{
-            measure: new SecondSpeciesMeasure(this.ctx, last ?? emptyMelodicContext()),
+            measure: new FourthSpeciesMeasure(this.ctx, last ?? emptyMelodicContext()),
             cost: 0,
         }];
     };

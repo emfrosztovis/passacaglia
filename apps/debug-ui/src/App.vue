@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { play, VoiceData } from 'species-counterpoint';
 import MusicScore from './components/MusicScore.vue';
-import { ref } from 'vue';
+import { reactive, ref } from 'vue';
 
 import Main from './Main.worker?worker';
 import type { MainMessage } from './Main.worker';
@@ -9,6 +9,7 @@ import { Debug } from 'common';
 import { NProgress } from 'naive-ui';
 
 let source = ref('');
+let blob = ref(undefined as string | undefined);
 let result: VoiceData[] | undefined;
 let progress = ref([0, 0] as [number, number]);
 
@@ -18,6 +19,8 @@ worker.onmessage = (ev: MessageEvent<MainMessage>) => {
         case 'ok':
             result = ev.data.data.map(VoiceData.deserialize);
             source.value = ev.data.source;
+            blob.value = URL.createObjectURL(new Blob([source.value]));
+            console.log(source.value);
             break;
         case 'no-solution':
             console.log('no solution');
@@ -40,9 +43,12 @@ worker.onmessage = (ev: MessageEvent<MainMessage>) => {
         <NProgress v-if="!source" type="line" :percentage="progress[0] / progress[1] * 100">
             {{ progress[0] }} / {{ progress[1] }}
         </NProgress>
-        <button v-if="result" @click="play(result, [72, 72, 72, 72], { tempo: 180, synth: true })">
+        <button v-if="result" @click="play(result, [20, 20, 20, 20], { tempo: 180, synth: true })">
             play
         </button>
+        <a v-if="blob" :href="blob" download="result.mxl">
+            download
+        </a>
         <MusicScore v-if="source" :file="source" />
     </div>
 </template>

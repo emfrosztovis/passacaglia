@@ -51,6 +51,18 @@ export class HashMap<P extends Hashable, V = void> {
     }
 
     /**
+     * Filter the items and update the values based on a predicate. Will modify the hash map and return a reference to the same object.
+     */
+    filterMap(pred: (p: P, v: V) => V | undefined): this {
+        for (const [k, [p, v]] of this.#map.entries()) {
+            const nv = pred(p, v);
+            if (nv === undefined) this.#map.delete(k);
+            else this.#map.set(k, [p, nv]);
+        }
+        return this;
+    }
+
+    /**
      * Intersect the entries with another hash map, keeping only keys that appear in both. Will modify the hash map and return a reference to the same object.
      * @param combine A function to merge the values from both maps to form a value in the result.
      */

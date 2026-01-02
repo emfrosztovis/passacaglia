@@ -1,4 +1,4 @@
-import { CounterpointContext, CounterpointScoreBuilder, FirstSpecies, parseNotes, Rules, SecondSpecies, ThirdSpecies, VoiceData } from 'species-counterpoint';
+import { CounterpointContext, CounterpointScoreBuilder, FirstSpecies, FourthSpecies, parseNotes, Rules, SecondSpecies, ThirdSpecies, VoiceData } from 'species-counterpoint';
 import { Debug, LogLevel, Rational, setLogger, type Serialized } from 'common';
 import { StandardHeptatonic } from 'core';
 import { Clef, toMxl } from 'musicxml';
@@ -13,7 +13,7 @@ const ctx = new CounterpointContext(
 ctx.localRules = [
     Rules.limitConsecutiveLeaps,
     Rules.forbidPerfectsBySimilarMotion,
-    Rules.forbidNearbyPerfects,
+    // Rules.forbidNearbyPerfects,
     Rules.forbidVoiceOverlapping,
     Rules.prioritizeVoiceMotion,
 ];
@@ -27,6 +27,7 @@ ctx.candidateRules = [
     // Rules.enforceMinor(StandardHeptatonic.PitchClasses.c),
     Rules.enforcePassingTones,
     Rules.enforceNeighborTones,
+    Rules.enforceSuspension,
     Rules.enforceMelodyIntervals,
     Rules.enforceLeapPreparationBefore,
     Rules.enforceLeapPreparationAfter,
@@ -45,16 +46,19 @@ ctx.nonHarmonicToneRules = {
         Rules.makePassingTone,
         Rules.enforceVerticalConsonanceWithMoving
     ],
+    'suspension': [
+        Rules.makeSuspension
+    ],
 };
 
-ctx.advanceReward = 50;
+ctx.advanceReward = 500;
 // ctx.allowUnison = true;
 // ctx.stochastic = true;
 
 const score = new CounterpointScoreBuilder(ctx)
-    // .soprano(ThirdSpecies)
-    .alto(SecondSpecies)
-    .tenor(FirstSpecies)
+    .soprano(ThirdSpecies)
+    // .alto(FourthSpecies)
+    .tenor(ThirdSpecies)
     .cantus(Clef.Bass, [
         parseNotes(['c3', ctx.parameters.measureLength]),
         parseNotes(['d3', ctx.parameters.measureLength]),

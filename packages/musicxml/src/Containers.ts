@@ -1,4 +1,4 @@
-import { StandardHeptatonic as H } from "core";
+import { StandardHeptatonic as H, SequentialCursor } from "core";
 import { create } from "xmlbuilder2";
 import { NoteLike, MeasureLike, VoiceLike } from "./Types";
 
@@ -10,46 +10,51 @@ export function pitch(x: H.Pitch) {
     }
 };
 
-export function note(n: NoteLike) {
+export function note(n: NoteLike, tieStart = false) {
     if (n.pitch) return {
         pitch: pitch(n.pitch),
         duration: n.duration.value(),
+        notations: n.isTied || tieStart
+            ? {
+                tied: {
+                    "@type": tieStart ? 'start' : 'stop'
+                },
+            }: undefined,
         lyric: (typeof n.isNonHarmonic == 'string')
             ? {
                 text: n.isNonHarmonic
-            } : undefined
+            } : undefined,
     }; else return {
         rest: {},
         duration: n.duration.value()
     };
 }
 
-export function firstMeasure(m: MeasureLike, v: VoiceLike) {
+export function measure(m: SequentialCursor<MeasureLike, VoiceLike, never>, v: VoiceLike) {
+    const notes: any[] = [];
+    // @ts-expect-error
+    for (let n = m.value.first()?.withParent(m); n; n = n.next()) {
+        notes.push(note(n.value, n.nextGlobal()?.value.isTied));
+    }
+
     return {
-        '@number': 0,
-        attributes: {
+        '@number': m.index,
+        attributes: m.index == 0 ? {
             divisions: 1,
             clef: {
                 sign: v.clef.type,
                 line: v.clef.line,
                 'clef-octave-change': v.clef.octave,
             }
-        },
-        note: m.elements.map(note)
-    };
-}
-
-export function measure(m: MeasureLike, i: number) {
-    return {
-        '@number': i,
-        note: m.elements.map(note)
+        } : undefined,
+        note: notes
     };
 }
 
 export function part(v: VoiceLike) {
     return {
         '@id': v.name,
-        measure: v.elements.map((m, i) => i == 0 ? firstMeasure(m, v) : measure(m, i))
+        measure: [...v.entries()].map((x) => measure(x, v))
     };
 }
 

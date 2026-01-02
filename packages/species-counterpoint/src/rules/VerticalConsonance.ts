@@ -19,7 +19,8 @@ export const enforceVerticalConsonanceWithMoving: CandidateRule
     for (const voice of s.voices) {
         if (voice == v) continue;
         const n1 = voice.noteAt(t);
-        if (!n1 || !n1.value.pitch) continue;
+        if (!n1 || !n1.value.pitch
+         || (n1.value.isNonHarmonic && !n1.globalTime.equals(t))) continue;
 
         const n2 = voice.noteAt(tprev);
         if (!n2 || n2.value.pitch !== n1.value.pitch) {
@@ -61,7 +62,8 @@ export const enforceVerticalConsonanceStrict: CandidateRule
     for (const voice of s.voices) {
         if (voice == v) continue;
         const n = voice.noteAt(t);
-        if (!n || !n.value.pitch) continue;
+        if (!n || !n.value.pitch
+         || (n.value.isNonHarmonic && !n.globalTime.equals(t))) continue;
 
         otherPitches.push(n.value.pitch);
         if (voice == lastVoice)

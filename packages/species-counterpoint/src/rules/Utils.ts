@@ -1,4 +1,5 @@
 import { NoteCursor } from "../Common";
+import { H } from "../Internal";
 
 export function isStepwiseBefore(c: NoteCursor): boolean | undefined {
     const pc = c.value.pitch;
@@ -28,4 +29,15 @@ export function isStepwiseAround(c: NoteCursor): boolean | undefined {
     const b = isStepwiseAfter(c);
     if (b === undefined) return undefined;
     return a && b;
+}
+
+export function isPerfectConsonance(i: H.Interval) {
+    const simple = i.abs().toSimple().distance.value();
+    return simple == 0 || simple == 7 || simple == 12;
+}
+
+export function isConsonance(i: H.Interval) {
+    const simple = i.abs().toSimple().distance.value();
+    return simple == 0 || simple == 3 || simple == 4 || simple == 7
+        || simple == 8 || simple == 9 || simple == 12;
 }

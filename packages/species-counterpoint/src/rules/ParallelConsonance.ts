@@ -1,11 +1,6 @@
 import { H } from "../Internal";
 import { LocalRule } from "../Context";
-import { isStepwiseAround } from "./Utils";
-
-function isPerfectConsonance(i: H.Interval) {
-    const simple = i.abs().toSimple().distance;
-    return simple.equals(0) || simple.equals(7) || simple.equals(12);
-}
+import { isPerfectConsonance, isStepwiseAround } from "./Utils";
 
 /**
  * Forbid arriving at perfect consonances 1) by similar motion or 2) immediately from perfect consonances.

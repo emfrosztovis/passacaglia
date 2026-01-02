@@ -20,7 +20,7 @@ export const enforceMelodyIntervals: CandidateRule = (ctx, _s, cur, c, type) =>
 
     const v = cur.parent.container;
     let ints = [...ctx.melodicIntervals.entries()];
-    if (v.melodySettings?.forbidRepeatedNotes)
+    if (v.melodySettings?.forbidRepeatedNotes && type !== 'suspension')
         ints = ints.filter(([x, _]) => x.distance.num > 0);
 
     const sign = (prev2?.pitch && prev2.pitch.ord() > prev.pitch.ord()) ? -1 : 1;
