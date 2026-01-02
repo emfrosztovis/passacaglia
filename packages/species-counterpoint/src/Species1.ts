@@ -1,6 +1,7 @@
-import { Score, Note } from "./Common";
+import { Note } from "./Voice";
 import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
+import { Score } from "./Score";
 
 class FirstSpeciesMeasure extends CounterpointMeasure {
     get writable() {
@@ -21,7 +22,7 @@ class FirstSpeciesMeasure extends CounterpointMeasure {
 
     getNextSteps(
         s: Score, c: CounterpointMeasureCursor
-    ): { measure: CounterpointMeasure; cost: number }[] {
+    ) {
         return this.ctx.fillHarmonicTone(s, this.atWithParent(0, c),
             (n, p) => new FirstSpeciesMeasure(this.ctx,
                 this.ctx.updateMelodicContext(this.melodicContext, p), n));

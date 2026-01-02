@@ -1,8 +1,11 @@
 import { Clef } from "musicxml";
-import { Measure, Note, Score, Voice } from "./Common";
+import { Measure, Note, Voice } from "./Voice";
 import { CounterpointContext } from "./Context";
 import { SequentialCursor } from "core";
 import { H } from "./Internal";
+import { Rational } from "common";
+import { Score } from "./Score";
+import { ChordElement, HarmonyBackground } from "./Chord";
 
 export type CounterpointMeasureCursor = SequentialCursor<CounterpointMeasure, CounterpointVoice, never>;
 // FIXME: typechecker bug?
@@ -16,6 +19,12 @@ export type MelodicContext = {
     n3rdLeaps: number;
     nUnidirectionalConsecutiveLeaps: number;
     nUnidirectional3rdLeaps: number;
+};
+
+export type Step = {
+    measure: CounterpointMeasure,
+    advanced: Rational,
+    cost: number
 };
 
 export function emptyMelodicContext(): MelodicContext {
@@ -43,10 +52,7 @@ export abstract class CounterpointMeasure extends Measure {
         return this.at(i)!.withParent(c);
     }
 
-    abstract getNextSteps(s: Score, c: CounterpointMeasureCursor): {
-        measure: CounterpointMeasure,
-        cost: number
-    }[];
+    abstract getNextSteps(s: Score, c: CounterpointMeasureCursor): Step[];
 }
 
 export class BlankMeasure extends CounterpointMeasure {
@@ -57,7 +63,7 @@ export class BlankMeasure extends CounterpointMeasure {
     }
 
     getNextSteps(s: Score, c: CounterpointMeasureCursor) {
-        return c.container.makeNewMeasure(s, c);
+        return c.container.makeNewMeasure(s, c).map((x) => ({ ...x, advanced: new Rational(0) } ));
     }
 
     hash(): string {
@@ -146,7 +152,12 @@ export class CounterpointScoreBuilder {
     ) { }
 
     build(): Score {
-        return new Score(this.ctx.parameters, this.#voices);
+        const ms: ChordElement[] = [];
+        for (let i = 0; i < this.ctx.targetMeasures; i++)
+            ms.push(new ChordElement(this.ctx.parameters.measureLength));
+
+        const h = new HarmonyBackground(ms);
+        return new Score(this.ctx.parameters, this.#voices, h);
     }
 
     voice(v: VoiceConstructor, clef: Clef, name: string, l: H.Pitch, h: H.Pitch): this {

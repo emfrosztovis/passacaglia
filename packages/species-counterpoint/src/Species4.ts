@@ -1,7 +1,8 @@
 import { Debug } from "common";
-import { Score, Note } from "./Common";
+import { Note } from "./Voice";
 import { CounterpointContext } from "./Context";
-import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
+import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointVoice, emptyMelodicContext, MelodicContext, Step } from "./Basic";
+import { Score } from "./Score";
 
 class FourthSpeciesMeasure extends CounterpointMeasure {
     get writable() {
@@ -28,9 +29,9 @@ class FourthSpeciesMeasure extends CounterpointMeasure {
 
     getNextSteps(
         s: Score, c: CounterpointMeasureCursor
-    ): { measure: CounterpointMeasure; cost: number }[] {
+    ): Step[] {
         if (this.elements[0].pitch == null) {
-            const next: { measure: CounterpointMeasure; cost: number }[] = [];
+            const next: Step[] = [];
             if (c.index == 0) {
                 next.push(...this.ctx.fillHarmonicTone(s,
                     this.atWithParent(1, c),
@@ -54,7 +55,7 @@ class FourthSpeciesMeasure extends CounterpointMeasure {
         }
 
         if (this.elements[1].pitch == null) {
-            const next: { measure: CounterpointMeasure; cost: number }[] = [];
+            const next: Step[] = [];
             next.push(...this.ctx.fillHarmonicTone(
                 s, this.atWithParent(1, c),
                 (n, p) => new FourthSpeciesMeasure(this.ctx,

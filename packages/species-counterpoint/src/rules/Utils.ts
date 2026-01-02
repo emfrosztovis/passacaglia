@@ -1,4 +1,4 @@
-import { NoteCursor } from "../Common";
+import { NoteCursor } from "../Voice";
 import { H } from "../Internal";
 
 export function isStepwiseBefore(c: NoteCursor): boolean | undefined {

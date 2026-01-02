@@ -168,32 +168,3 @@ export class VoiceData extends Voice<MeasureData> implements Serializable {
         return new VoiceData(v.elements.map((x) => MeasureData.from(x)), v.index, v.name, v.clef);
     }
 }
-
-export type Parameters = {
-    measureLength: Rational;
-};
-
-export class Score {
-    constructor(
-        public readonly parameters: Parameters,
-        public readonly voices: readonly Voice[]
-    ) {}
-
-    hash(): string {
-        return this.voices.map((x) => x.hash()).join('|');
-    }
-
-    toString() {
-        return this.voices.map((x) => x.toString()).join('\n');
-    }
-
-    replaceVoice(i: number, v: Voice) {
-        const vs = [...this.voices];
-        vs.splice(i, 1, v);
-        return new Score(this.parameters, vs);
-    }
-
-    clone() {
-        return new Score(this.parameters, this.voices.map((x) => x.clone()));
-    }
-}

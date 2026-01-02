@@ -1,10 +1,12 @@
 import { Debug, shuffle } from "common";
 import { AStar, AStarNode } from "./AStar";
-import { Score, Parameters, NonHarmonicType, Note } from "./Common";
-import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice, MelodicContext } from "./Basic";
+import { NonHarmonicType, Note } from "./Voice";
+import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice, MelodicContext, Step } from "./Basic";
 import { HashMap } from "common";
 import { parsePreferred } from "./rules/Scales";
 import { H } from "./Internal";
+import { Score, Parameters } from "./Score";
+import { Chord, ChordCursor } from "./Chord";
 
 export type LocalRule = (
     ctx: CounterpointContext, s: Score, current: CounterpointNoteCursor
@@ -19,10 +21,16 @@ export type CandidateRule = (
     candidates: HashMap<H.Pitch, number> | null, type?: NonHarmonicType
 ) => HashMap<H.Pitch, number>;
 
+export type HarmonyRule = (
+    ctx: CounterpointContext, s: Score, current: ChordCursor,
+    candidates: HashMap<Chord, number> | null
+) => HashMap<Chord, number>;
+
 export class CounterpointContext {
     localRules: LocalRule[] = [];
     globalRules: GlobalRule[] = [];
     candidateRules: CandidateRule[] = [];
+    harmonyRules: HarmonyRule[] = [];
 
     nonHarmonicToneRules: Partial<Record<NonHarmonicType, CandidateRule[]>> = {};
     harmonicToneRules: CandidateRule[] = [];
@@ -83,7 +91,7 @@ export class CounterpointContext {
         };
     }
 
-    getCandidates(
+    private getCandidates(
         rules: CandidateRule[], s: Score, current: CounterpointNoteCursor,
         type?: NonHarmonicType
     ) {
@@ -102,10 +110,7 @@ export class CounterpointContext {
         create: (n: Note, p: H.Pitch) => CounterpointMeasure,
         costOffset = 0
     ){
-        const results: {
-            measure: CounterpointMeasure;
-            cost: number;
-        }[] = [];
+        const results: Step[] = [];
 
         for (const type of types) {
             const rules = this.nonHarmonicToneRules[type];
@@ -123,7 +128,7 @@ export class CounterpointContext {
         s: Score, note: CounterpointNoteCursor,
         create: (n: Note, p: H.Pitch) => CounterpointMeasure,
         costOffset = 0
-    ){
+    ) {
         return this.fillIn(this.harmonicToneRules, s, note, undefined, create, costOffset);
     }
 
@@ -133,7 +138,7 @@ export class CounterpointContext {
         type: NonHarmonicType | undefined,
         create: (n: Note, p: H.Pitch) => CounterpointMeasure,
         costOffset = 0,
-    ) {
+    ): Step[] {
         const measure = note.parent;
         const voice = measure.container;
         const candidates = [...this.getCandidates(rules, s, note, type).entries()];
@@ -149,91 +154,23 @@ export class CounterpointContext {
                 if (c == Infinity) return [];
                 cost += c;
             }
-            return { measure: m, cost: cost + costOffset };
+            return { measure: m, cost: cost + costOffset, advanced: note.duration };
         });
+    }
+
+    getChordCandidates(
+        s: Score, current: ChordCursor
+    ) {
+        let candidates: HashMap<Chord, number> | null = null;
+        for (const rule of this.harmonyRules) {
+            candidates = rule(this, s, current, candidates);
+            if (candidates.size == 0) return candidates;
+        }
+        return candidates;
     }
 
     constructor(
         public readonly targetMeasures: number,
         public readonly parameters: Parameters,
     ) {}
-
-    solve(s: Score) {
-        const ctx = this;
-        let progress = 0;
-        let stochastic = this.stochastic;
-
-        class Node implements AStarNode {
-            readonly isGoal: boolean;
-            #hash: string;
-            #writables: CounterpointMeasureCursor[];
-
-            #findWritable() {
-                for (let i = 0; i < this.score.voices.length; i++) {
-                    const v = this.score.voices[i];
-                    if (!(v instanceof CounterpointVoice)) continue;
-                    const m = v.at(this.measureIndex);
-                    if (!m || !m.value.writable) continue;
-                    this.#writables.push(m);
-                }
-            }
-
-            constructor(
-                public score: Score,
-                readonly measureIndex: number,
-                readonly hCost: number,
-            ) {
-                this.#hash = score.hash();
-                this.#writables = [];
-
-                this.isGoal = false;
-                while (this.measureIndex <= ctx.targetMeasures) {
-                    this.#findWritable();
-                    if (this.#writables.length > 0) return;
-                    this.measureIndex++;
-                    if (measureIndex > progress) {
-                        progress = measureIndex;
-                        Debug.info('progress ->', progress);
-                    }
-                }
-                this.isGoal = true;
-            }
-
-            getNeighbors(): { node: AStarNode; cost: number; }[] {
-                return this.#writables.flatMap((x) => {
-                    const voice = x.container;
-                    const nexts = x.value.getNextSteps(this.score, x);
-
-                    const debug: [number, string][] = [];
-                    const result = nexts.flatMap(({ measure, cost }) => {
-                        const newVoice = voice.replaceMeasure(x.index, measure);
-                        const newScore = this.score.replaceVoice(voice.index, newVoice);
-
-                        if (ctx.globalRules.find((x) => x(ctx, newScore) !== null))
-                            return [];
-                        else {
-                            debug.push([cost, measure.hash()]);
-                            return {
-                                node: new Node(newScore,
-                                    this.measureIndex, this.hCost - ctx.advanceReward),
-                                cost
-                            };
-                        }
-                    });
-                    // Debug.trace(voice.name, '[', x.index, ']:', x.value.hash(), '->',
-                    //     debug.sort((a, b) => a[0] - b[0]).join(' / '));
-                    return stochastic ? shuffle(result) : result;
-                });
-            }
-
-            hash(): string {
-                return this.#hash;
-            }
-
-            getHeuristicCost(): number {
-                return this.hCost;
-            }
-        }
-        return new AStar(new Node(s, 0, 0));
-    }
 }

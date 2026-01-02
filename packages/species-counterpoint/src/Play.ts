@@ -1,4 +1,4 @@
-import { Score, Voice } from "./Common";
+import { Voice } from "./Voice";
 
 type Event = {
     type: 'on',

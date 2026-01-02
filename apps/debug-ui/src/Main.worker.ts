@@ -1,4 +1,4 @@
-import { CounterpointContext, CounterpointScoreBuilder, FirstSpecies, FourthSpecies, parseNotes, Rules, SecondSpecies, ThirdSpecies, VoiceData } from 'species-counterpoint';
+import { CounterpointContext, CounterpointScoreBuilder, CounterpointSolver, FirstSpecies, FourthSpecies, parseNotes, Rules, SecondSpecies, ThirdSpecies, VoiceData } from 'species-counterpoint';
 import { Debug, LogLevel, Rational, setLogger, type Serialized } from 'common';
 import { StandardHeptatonic } from 'core';
 import { Clef, toMxl } from 'musicxml';
@@ -13,7 +13,7 @@ const ctx = new CounterpointContext(
 ctx.localRules = [
     Rules.limitConsecutiveLeaps,
     Rules.forbidPerfectsBySimilarMotion,
-    // Rules.forbidNearbyPerfects,
+    Rules.forbidNearbyPerfects,
     Rules.forbidVoiceOverlapping,
     Rules.prioritizeVoiceMotion,
 ];
@@ -51,14 +51,13 @@ ctx.nonHarmonicToneRules = {
     ],
 };
 
-ctx.advanceReward = 500;
-// ctx.allowUnison = true;
+ctx.allowUnison = true;
 // ctx.stochastic = true;
 
 const score = new CounterpointScoreBuilder(ctx)
     .soprano(ThirdSpecies)
-    // .alto(FourthSpecies)
-    .tenor(ThirdSpecies)
+    // .alto(SecondSpecies)
+    // .tenor(FirstSpecies)
     .cantus(Clef.Bass, [
         parseNotes(['c3', ctx.parameters.measureLength]),
         parseNotes(['d3', ctx.parameters.measureLength]),
@@ -109,20 +108,29 @@ setLogger((level, message) => {
     } satisfies MainMessage);
 });
 
-const astar = ctx.solve(score);
+const solver = new CounterpointSolver(ctx);
+
 let progress = 0;
-astar.onProgress = (p) => {
-    if (p.current.measureIndex != progress) {
-        progress = p.current.measureIndex;
+solver.onProgress = (p) => {
+    if (p.measureIndex != progress) {
+        progress = p.measureIndex;
         postMessage({
             type: 'progress',
             progress,
-            total: ctx.targetMeasures
+            total: p.totalMeasures
         } satisfies MainMessage);
     }
 }
 
-const result = astar.search()?.result.score;
+const result = solver.aStar(score, {
+    type: 'constant',
+    value: 50,
+});
+// const result = solver.aStar(score, {
+//     type: 'lexicographical',
+// });
+// const result = solver.beamSearch(score, 200);
+
 console.log(result?.toString());
 
 if (result) {

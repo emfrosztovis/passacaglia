@@ -1,7 +1,8 @@
 import { Debug, Rational } from "common";
-import { Score, Note } from "./Common";
+import { Note } from "./Voice";
 import { CounterpointContext } from "./Context";
-import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
+import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice, emptyMelodicContext, MelodicContext, Step } from "./Basic";
+import { Score } from "./Score";
 
 class ThirdSpeciesMeasure extends CounterpointMeasure {
     get writable() {
@@ -23,11 +24,11 @@ class ThirdSpeciesMeasure extends CounterpointMeasure {
 
     getNextSteps(
         s: Score, c: CounterpointMeasureCursor
-    ): { measure: CounterpointMeasure; cost: number }[] {
+    ) {
         // FIXME: withParent
         // @ts-expect-error
         const ci: CounterpointNoteCursor = this.find((x) => x.value.pitch === null && (c.index == 0 ? x.index > 0 : true))?.withParent(c);
-        const next: { measure: CounterpointMeasure; cost: number }[] = [];
+        const next: Step[] = [];
         Debug.assert(ci !== undefined);
 
         next.push(...this.ctx.fillHarmonicTone(s, ci,
