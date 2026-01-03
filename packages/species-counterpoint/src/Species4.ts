@@ -49,7 +49,7 @@ class FourthSpeciesMeasure extends CounterpointMeasure {
                     this.atWithParent(0, c),
                     (n, p) => new FourthSpeciesMeasure(this.ctx,
                         this.ctx.updateMelodicContext(this.melodicContext, p),
-                        n, undefined), 5000));
+                        n, undefined), 500));
             }
             return next;
         }

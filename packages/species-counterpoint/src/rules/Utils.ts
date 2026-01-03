@@ -1,5 +1,7 @@
 import { NoteCursor } from "../Voice";
 import { H } from "../Internal";
+import { CounterpointNoteCursor } from "../Basic";
+import { Debug } from "common";
 
 export function isStepwiseBefore(c: NoteCursor): boolean | undefined {
     const pc = c.value.pitch;
@@ -40,4 +42,28 @@ export function isConsonance(i: H.Interval) {
     const simple = i.abs().toSimple().distance.value();
     return simple == 0 || simple == 3 || simple == 4 || simple == 7
         || simple == 8 || simple == 9 || simple == 12;
+}
+
+export function isLeadingTone(p: H.Pitch, s: H.Scale) {
+    const deg = s.getExactDegree(p);
+    if (!deg) return false;
+    return deg.index == s.degrees.length - 1;
+}
+
+export function prevDifferent(c: CounterpointNoteCursor) {
+    Debug.assert(!!c.value.pitch);
+    let n: CounterpointNoteCursor | undefined;
+    while (n = c.prevGlobal())
+        if (!n.value.pitch || !n.value.pitch.equals(c.value.pitch))
+            return n;
+    return undefined;
+}
+
+export function nextDifferent(c: CounterpointNoteCursor) {
+    Debug.assert(!!c.value.pitch);
+    let n: CounterpointNoteCursor | undefined;
+    while (n = c.nextGlobal())
+        if (!n.value.pitch || !n.value.pitch.equals(c.value.pitch))
+            return n;
+    return undefined;
 }

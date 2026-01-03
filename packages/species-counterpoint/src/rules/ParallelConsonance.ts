@@ -21,8 +21,8 @@ export const forbidPerfectsBySimilarMotion: LocalRule = (_ctx, s, x1) => {
         // skip if they're both repeated
         if (sign0 == sign1 && sign0 == 0) continue;
 
-        const d0 = x0.value.pitch.intervalTo(n0.value.pitch);
-        const d1 = x1.value.pitch.intervalTo(n1.value.pitch);
+        const d0 = x0.value.pitch.absoluteIntervalTo(n0.value.pitch);
+        const d1 = x1.value.pitch.absoluteIntervalTo(n1.value.pitch);
         const isSimilarMotion = sign0 == sign1;
         if ((isSimilarMotion || isPerfectConsonance(d0)) && isPerfectConsonance(d1))
             return Infinity;
@@ -58,7 +58,7 @@ export const forbidNearbyPerfects: LocalRule = (ctx, s, x1) => {
             const py1 = y1?.value.pitch;
             if (!py1) continue;
 
-            const int1 = px1.intervalTo(py1);
+            const int1 = px1.absoluteIntervalTo(py1);
             if (!isPerfectConsonance(int1)) continue;
 
             // check notes from all other voices against this voice

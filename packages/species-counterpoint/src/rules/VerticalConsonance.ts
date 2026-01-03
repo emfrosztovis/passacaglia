@@ -33,7 +33,7 @@ export const enforceVerticalConsonanceWithMoving: CandidateRule
         let newCost = 0;
 
         for (const x of otherPitches) {
-            const int = x.intervalTo(p).toSimple({ preserveUpToSteps: 7 }).abs();
+            const int = x.absoluteIntervalTo(p).toSimple({ preserveUpToSteps: 7 }).abs();
             const c2 = ctx.harmonyIntervals.get(int);
             if (c2 === undefined) {
                 c.delete(p);
@@ -74,7 +74,7 @@ export const enforceVerticalConsonanceStrict: CandidateRule
         let newCost = 0;
 
         for (const x of otherPitches) {
-            const int = x.intervalTo(p).toSimple().abs();
+            const int = x.absoluteIntervalTo(p).toSimple().abs();
             const c2 = ctx.harmonyIntervals.get(int);
             if (c2 === undefined) {
                 c.delete(p);
@@ -92,7 +92,7 @@ export const enforceVerticalConsonanceStrict: CandidateRule
         c.set(p, cost + newCost);
 
         if (bassPitch) {
-            const int = bassPitch.intervalTo(p).toSimple();
+            const int = bassPitch.absoluteIntervalTo(p).toSimple();
             if (ctx.forbidWithBass.find((f) => f.equals(int))) {
                 c.delete(p);
                 continue;

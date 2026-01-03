@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { play, VoiceData } from 'species-counterpoint';
 import MusicScore from './components/MusicScore.vue';
-import { reactive, ref } from 'vue';
+import { ref } from 'vue';
 
 import Main from './Main.worker?worker';
 import type { MainMessage } from './Main.worker';
@@ -43,7 +43,7 @@ worker.onmessage = (ev: MessageEvent<MainMessage>) => {
         <NProgress v-if="!source" type="line" :percentage="progress[0] / progress[1] * 100">
             {{ progress[0] }} / {{ progress[1] }}
         </NProgress>
-        <button v-if="result" @click="play(result, [20, 20, 20, 20], { tempo: 180, synth: true })">
+        <button v-if="result" @click="play(result, [74, 74, 20, 53], { tempo: 180, synth: true })">
             play
         </button>
         <a v-if="blob" :href="blob" download="result.mxl">

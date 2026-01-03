@@ -3,6 +3,7 @@ import { Score } from "./Score";
 import { CounterpointContext } from "./Context";
 import { Debug, HashMap, shuffle } from "common";
 import { CounterpointMeasureCursor, CounterpointVoice } from "./Basic";
+import { ChordCursor } from "./Chord";
 
 export type CounterpointSolverRewardStrategy = {
     type: 'lexicographical'
@@ -26,15 +27,28 @@ export type CounterpointSolverProgress = {
 class Node {
     readonly isGoal: boolean;
     #hash: string;
-    #writables: CounterpointMeasureCursor[];
+    #target: {
+        chord: ChordCursor
+    } | {
+        measures: CounterpointMeasureCursor[]
+    } | undefined;
 
     #findWritable() {
-        for (let i = 0; i < this.score.voices.length; i++) {
-            const v = this.score.voices[i];
-            if (!(v instanceof CounterpointVoice)) continue;
-            const m = v.at(this.measureIndex);
-            if (!m || !m.value.writable) continue;
-            this.#writables.push(m);
+        const ch = this.score.harmony.at(this.measureIndex);
+        Debug.assert(ch !== undefined);
+        if (!ch.value.chord && this.ctx.harmonyRules.length > 0)
+            this.#target = { chord: ch };
+        else {
+            const measures: CounterpointMeasureCursor[] = [];
+            for (let i = 0; i < this.score.voices.length; i++) {
+                const v = this.score.voices[i];
+                if (!(v instanceof CounterpointVoice)) continue;
+                const m = v.at(this.measureIndex);
+                if (!m || !m.value.writable) continue;
+                measures.push(m);
+            }
+            if (measures.length > 0)
+                this.#target = { measures };
         }
     }
 
@@ -46,39 +60,35 @@ class Node {
         readonly cost: number,
     ) {
         this.#hash = score.hash();
-        this.#writables = [];
 
         this.isGoal = false;
-        while (this.measureIndex <= ctx.targetMeasures) {
+        while (this.measureIndex < ctx.targetMeasures) {
             this.#findWritable();
-            if (this.#writables.length > 0) return;
+            if (this.#target) return;
             this.measureIndex++;
-            // new measure -- find harmony
-            // return;
         }
         this.isGoal = true;
     }
 
     getNeighbors(): Node[] {
-        if (this.#writables.length == 0) {
+        Debug.assert(this.#target !== undefined);
+
+        if ('chord' in this.#target) {
             // find harmony
             const candidates = this.ctx.getChordCandidates(
-                this.score, this.score.harmony.at(this.measureIndex)!);
-            if (!candidates) {
-                return [new Node(this.score, this.ctx,
-                    this.measureIndex,
-                    this.nStep + 1,
-                    this.cost)];
-            } else return [...candidates.entries()].map(([chord, cost]) => {
+                this.score, this.#target.chord);
+            return [...candidates.entries()].map(([chord, cost]) => {
                 const newHarmony = this.score.harmony.replaceChord(this.measureIndex, chord);
                 const newScore = this.score.replaceHarmony(newHarmony);
-
+                // Debug.trace(`${this.measureIndex} -> ${chord.toString()}`);
                 return new Node(newScore, this.ctx,
                     this.measureIndex,
                     this.nStep + 1,
                     this.cost + cost);
             });
-        } else return this.#writables.flatMap((x) => {
+        }
+
+        return this.#target.measures.flatMap((x) => {
             const voice = x.container;
             const nexts = x.value.getNextSteps(this.score, x);
 

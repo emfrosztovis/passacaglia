@@ -29,7 +29,8 @@ export type HarmonyRule = (
 export class CounterpointContext {
     localRules: LocalRule[] = [];
     globalRules: GlobalRule[] = [];
-    candidateRules: CandidateRule[] = [];
+    candidateRulesBefore: CandidateRule[] = [];
+    candidateRulesAfter: CandidateRule[] = [];
     harmonyRules: HarmonyRule[] = [];
 
     nonHarmonicToneRules: Partial<Record<NonHarmonicType, CandidateRule[]>> = {};
@@ -96,7 +97,7 @@ export class CounterpointContext {
         type?: NonHarmonicType
     ) {
         let candidates: HashMap<H.Pitch, number> | null = null;
-        for (const rule of [...this.candidateRules, ...rules]) {
+        for (const rule of [...this.candidateRulesBefore, ...rules, ...this.candidateRulesAfter]) {
             candidates = rule(this, s, current, candidates, type);
             if (candidates.size == 0) return candidates;
         }
@@ -166,6 +167,7 @@ export class CounterpointContext {
             candidates = rule(this, s, current, candidates);
             if (candidates.size == 0) return candidates;
         }
+        Debug.assert(candidates !== null);
         return candidates;
     }
 

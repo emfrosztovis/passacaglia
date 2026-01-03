@@ -4,11 +4,15 @@ import { StandardHeptatonic } from 'core';
 import { Clef, toMxl } from 'musicxml';
 
 const ctx = new CounterpointContext(
-    15, // targetMeasures
+    12, // targetMeasures
     {
-        measureLength: new Rational(4)
+        measureLength: new Rational(6)
     }
 );
+
+ctx.harmonyRules = [
+    Rules.enforceValidChords
+];
 
 ctx.localRules = [
     Rules.limitConsecutiveLeaps,
@@ -18,23 +22,24 @@ ctx.localRules = [
     Rules.prioritizeVoiceMotion,
 ];
 
-ctx.candidateRules = [
-    Rules.enforceScaleTones(
-        StandardHeptatonic.Scales.C.major),
-    Rules.enforceDirectionalDegreeMatrix(
-        StandardHeptatonic.Scales.C.major,
-        Rules.DegreeMatrixPreset.major),
+ctx.candidateRulesBefore = [
+    Rules.enforceScaleTones,
+    // Rules.enforceDirectionalDegreeMatrix(Rules.DegreeMatrixPreset.major),
     // Rules.enforceMinor(StandardHeptatonic.PitchClasses.c),
     Rules.enforcePassingTones,
     Rules.enforceNeighborTones,
     Rules.enforceSuspension,
+];
+
+ctx.candidateRulesAfter = [
     Rules.enforceMelodyIntervals,
     Rules.enforceLeapPreparationBefore,
     Rules.enforceLeapPreparationAfter,
 ];
 
 ctx.harmonicToneRules = [
-    Rules.enforceVerticalConsonanceStrict
+    Rules.enforceChordTone,
+    Rules.enforceVerticalConsonanceStrict,
 ];
 
 ctx.nonHarmonicToneRules = {
@@ -51,54 +56,46 @@ ctx.nonHarmonicToneRules = {
     ],
 };
 
-ctx.allowUnison = true;
+// ctx.allowUnison = true;
 // ctx.stochastic = true;
 
 const score = new CounterpointScoreBuilder(ctx)
-    .soprano(ThirdSpecies)
-    // .alto(SecondSpecies)
-    // .tenor(FirstSpecies)
-    .cantus(Clef.Bass, [
-        parseNotes(['c3', ctx.parameters.measureLength]),
-        parseNotes(['d3', ctx.parameters.measureLength]),
-        parseNotes(['e3', ctx.parameters.measureLength]),
-        parseNotes(['g3', ctx.parameters.measureLength]),
-        parseNotes(['f3', ctx.parameters.measureLength]),
-        parseNotes(['d3', ctx.parameters.measureLength]),
-        parseNotes(['b2', ctx.parameters.measureLength]),
-        parseNotes(['c3', ctx.parameters.measureLength]),
-        parseNotes(['d3', ctx.parameters.measureLength]),
-        parseNotes(['e3', ctx.parameters.measureLength]),
-        parseNotes(['g3', ctx.parameters.measureLength]),
-        parseNotes(['f3', ctx.parameters.measureLength]),
-        parseNotes(['d3', ctx.parameters.measureLength]),
-        parseNotes(['b2', ctx.parameters.measureLength]),
-        parseNotes(['c3', ctx.parameters.measureLength]),
+    .cantus(Clef.Treble, [
+        parseNotes(['c5', ctx.parameters.measureLength]),
+        parseNotes(['d5', ctx.parameters.measureLength]),
+        parseNotes(['e5', ctx.parameters.measureLength]),
+        parseNotes(['d5', ctx.parameters.measureLength]),
+        parseNotes(['c5', ctx.parameters.measureLength]),
+        parseNotes(['a4', ctx.parameters.measureLength]),
+        parseNotes(['b4', ctx.parameters.measureLength]),
+        parseNotes(['g4', ctx.parameters.measureLength]),
+        parseNotes(['e4', ctx.parameters.measureLength]),
+        parseNotes(['a4', ctx.parameters.measureLength]),
+        parseNotes(['b4', ctx.parameters.measureLength]),
+        parseNotes(['c5', ctx.parameters.measureLength]),
     ])
-    .build();
-
-// const score = new CounterpointScoreBuilder(ctx)
-//     // .cantus(Clef.Treble, [
-//     //     parseNotes(['c5', ctx.parameters.measureLength]),
-//     //     parseNotes(['d5', ctx.parameters.measureLength]),
-//     //     parseNotes(['ef5', ctx.parameters.measureLength]),
-//     //     parseNotes(['g5', ctx.parameters.measureLength]),
-//     //     parseNotes(['f5', ctx.parameters.measureLength]),
-//     //     parseNotes(['d5', ctx.parameters.measureLength]),
-//     //     parseNotes(['b4', ctx.parameters.measureLength]),
-//     //     parseNotes(['c5', ctx.parameters.measureLength]),
-//     //     parseNotes(['d5', ctx.parameters.measureLength]),
-//     //     parseNotes(['ef5', ctx.parameters.measureLength]),
-//     //     parseNotes(['g5', ctx.parameters.measureLength]),
-//     //     parseNotes(['f5', ctx.parameters.measureLength]),
-//     //     parseNotes(['d5', ctx.parameters.measureLength]),
-//     //     parseNotes(['b4', ctx.parameters.measureLength]),
-//     // ])
-//     // .soprano(SecondSpecies)
-//     .soprano(FirstSpecies)
-//     .alto(ThirdSpecies)
-//     .bass(SecondSpecies)
-//     .build();
+    // .soprano(FourthSpecies)
+    // .soprano(FourthSpecies)
+    .alto(ThirdSpecies)
+    .tenor(FirstSpecies)
+    // .cantus(Clef.Bass, [
+    //     parseNotes(['c3', ctx.parameters.measureLength]),
+    //     parseNotes(['d3', ctx.parameters.measureLength]),
+    //     parseNotes(['e3', ctx.parameters.measureLength]),
+    //     parseNotes(['g3', ctx.parameters.measureLength]),
+    //     parseNotes(['f3', ctx.parameters.measureLength]),
+    //     parseNotes(['d3', ctx.parameters.measureLength]),
+    //     parseNotes(['b2', ctx.parameters.measureLength]),
+    //     parseNotes(['c3', ctx.parameters.measureLength]),
+    //     parseNotes(['d3', ctx.parameters.measureLength]),
+    //     parseNotes(['e3', ctx.parameters.measureLength]),
+    //     parseNotes(['g3', ctx.parameters.measureLength]),
+    //     parseNotes(['f3', ctx.parameters.measureLength]),
+    //     parseNotes(['d3', ctx.parameters.measureLength]),
+    //     parseNotes(['b2', ctx.parameters.measureLength]),
+    //     parseNotes(['c3', ctx.parameters.measureLength]),
+    // ])
+    .build(StandardHeptatonic.Scales.C.major);
 
 Debug.level = LogLevel.Trace;
 setLogger((level, message) => {
@@ -137,7 +134,7 @@ if (result) {
     postMessage({
         type: 'ok',
         data: result.voices.map((x) => VoiceData.from(x).serialize()),
-        source: toMxl.score(result.voices)
+        source: toMxl.score(result)
     } satisfies MainMessage);
 } else {
     postMessage({

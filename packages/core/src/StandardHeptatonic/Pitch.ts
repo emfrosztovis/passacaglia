@@ -57,9 +57,9 @@ export class _Pitch
         return new _Pitch(deg, acci, period) as this;
     }
 
-    override toString(): string {
+    override toString(opt?: { noPeriod: boolean }): string {
         const names = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
-        return `${names[this.index]}${Accidental.print(this.acci)}${this.period}`;
+        return `${names[this.index]}${Accidental.print(this.acci)}${opt?.noPeriod ? '' : this.period}`;
     }
 
     override intervalTo(b: _Pitch): _Interval {

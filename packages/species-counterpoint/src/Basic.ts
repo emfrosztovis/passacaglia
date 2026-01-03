@@ -151,12 +151,12 @@ export class CounterpointScoreBuilder {
         private ctx: CounterpointContext
     ) { }
 
-    build(): Score {
+    build(scale: H.Scale): Score {
         const ms: ChordElement[] = [];
         for (let i = 0; i < this.ctx.targetMeasures; i++)
             ms.push(new ChordElement(this.ctx.parameters.measureLength));
 
-        const h = new HarmonyBackground(ms);
+        const h = new HarmonyBackground(scale, ms);
         return new Score(this.ctx.parameters, this.#voices, h);
     }
 

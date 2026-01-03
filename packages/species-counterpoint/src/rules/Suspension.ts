@@ -1,6 +1,6 @@
 import { Debug, HashMap } from "common";
 import { CandidateRule } from "../Context";
-import { isConsonance } from "./Utils";
+import { isConsonance, isLeadingTone } from "./Utils";
 
 /**
  * Enforce that notes surrounding a passing tone are its neighbors in ascending or descending order.
@@ -26,6 +26,7 @@ export const enforceSuspension: CandidateRule = (_ctx, s, cur, c) => {
 
     return c.filterMap((p, v) =>
         prev.pitch!.stepsTo(p) == -1 ? v
+      : isLeadingTone(prev.pitch!, s.harmony.scale) && prev.pitch!.distanceTo(p).value() == 1 ? v
       : isChordTone && prev.pitch!.stepsTo(p) == 1 ? v + 100
       : undefined
     );

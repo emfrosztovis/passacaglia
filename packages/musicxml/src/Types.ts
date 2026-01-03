@@ -27,9 +27,21 @@ export type NoteLike = DurationalElement & {
     readonly isTied?: boolean;
 };
 
+export type ChordLike = DurationalElement & {
+    toString(): string
+};
+
+export type HarmonyLike = SequentialContainer<ChordLike>;
+
 export type MeasureLike = DurationalElement & SequentialContainer<NoteLike>;
 
 export type VoiceLike = SequentialContainer<MeasureLike> & {
     readonly name: string;
     readonly clef: Clef;
+    readonly index: number;
+};
+
+export type ScoreLike = {
+    readonly voices: readonly VoiceLike[],
+    readonly harmony?: HarmonyLike
 };

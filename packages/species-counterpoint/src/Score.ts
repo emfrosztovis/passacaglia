@@ -14,7 +14,7 @@ export class Score {
     ) {}
 
     hash(): string {
-        return this.voices.map((x) => x.hash()).join('|');
+        return this.voices.map((x) => x.hash()).join('|') + '||' + this.harmony.hash();
     }
 
     toString() {

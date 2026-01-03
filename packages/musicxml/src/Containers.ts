@@ -1,6 +1,6 @@
 import { StandardHeptatonic as H, SequentialCursor } from "core";
 import { create } from "xmlbuilder2";
-import { NoteLike, MeasureLike, VoiceLike } from "./Types";
+import { NoteLike, MeasureLike, VoiceLike, ScoreLike } from "./Types";
 
 export function pitch(x: H.Pitch) {
     return {
@@ -30,15 +30,26 @@ export function note(n: NoteLike, tieStart = false) {
     };
 }
 
-export function measure(m: SequentialCursor<MeasureLike, VoiceLike, never>, v: VoiceLike) {
+export function measure(
+    m: SequentialCursor<MeasureLike, VoiceLike, never>,
+    v: VoiceLike, s: ScoreLike,
+) {
     const notes: any[] = [];
     // @ts-expect-error
     for (let n = m.value.first()?.withParent(m); n; n = n.next()) {
         notes.push(note(n.value, n.nextGlobal()?.value.isTied));
     }
 
+    const ch = s.harmony?.at(m.index)?.value.toString();
+
     return {
-        '@number': m.index,
+        '@number': m.index + 1,
+        'direction': (v.index == s.voices.length - 1 && ch) ? {
+            '@placement': 'below',
+            'direction-type': {
+                'words': ch
+            }
+        } : undefined,
         attributes: m.index == 0 ? {
             divisions: 1,
             clef: {
@@ -47,30 +58,30 @@ export function measure(m: SequentialCursor<MeasureLike, VoiceLike, never>, v: V
                 'clef-octave-change': v.clef.octave,
             }
         } : undefined,
-        note: notes
+        note: notes,
     };
 }
 
-export function part(v: VoiceLike) {
+export function part(s: ScoreLike, v: VoiceLike) {
     return {
         '@id': v.name,
-        measure: [...v.entries()].map((x) => measure(x, v))
+        measure: [...v.entries()].map((x) => measure(x, v, s))
     };
 }
 
-export function score(vs: readonly VoiceLike[]): string {
+export function score(s: ScoreLike): string {
     return create({
         standalone: false,
     }, {
         'score-partwise': {
             '@version': '4.0',
             'part-list': {
-                'score-part': vs.map((x) => ({
+                'score-part': s.voices.map((x) => ({
                     '@id': x.name,
                     'part-name': x.name
                 })),
             },
-            part: vs.map(part)
+            part: s.voices.map((x) => part(s, x))
         }
     }).end({ prettyPrint: true });
 }
