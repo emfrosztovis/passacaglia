@@ -14,15 +14,16 @@ export const forbidPerfectsBySimilarMotion: LocalRule = (_ctx, s, x1) => {
     for (const voice of s.voices) {
         if (voice == v) continue;
         const n1 = voice.noteAt(x1.globalTime);
-        const n0 = voice.noteAt(x0.globalTime);
-        if (!n0?.value.pitch || !n1?.value.pitch) continue;
+        if (!n1?.value.pitch) continue;
+        const n0 = n1.globalTime.value() < x1.globalTime.value() ? n1 : n1.prevGlobal();
+        if (!n0?.value.pitch) continue;
 
         const sign1 = Math.sign(n0.value.pitch.distanceTo(n1.value.pitch).num);
         // skip if they're both repeated
         if (sign0 == sign1 && sign0 == 0) continue;
 
-        const d0 = x0.value.pitch.absoluteIntervalTo(n0.value.pitch);
-        const d1 = x1.value.pitch.absoluteIntervalTo(n1.value.pitch);
+        const d0 = x0.value.pitch.absoluteIntervalTo(n0.value.pitch).toSimple();
+        const d1 = x1.value.pitch.absoluteIntervalTo(n1.value.pitch).toSimple();
         const isSimilarMotion = sign0 == sign1;
         if ((isSimilarMotion || isPerfectConsonance(d0)) && isPerfectConsonance(d1))
             return Infinity;

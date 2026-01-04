@@ -6,8 +6,6 @@ import { CounterpointMeasureCursor, CounterpointVoice } from "./Basic";
 import { ChordCursor } from "./Chord";
 
 export type CounterpointSolverRewardStrategy = {
-    type: 'lexicographical'
-} | {
     type: 'constant',
     value: number
 }
@@ -19,13 +17,17 @@ export type CounterpointSolverRewardStrategy = {
 
 export type CounterpointSolverProgress = {
     measureIndex: number,
+    furthest: number,
     totalMeasures: number,
     iteration: number,
     // ...
 }
 
+const POWER = 0.9;
+
 class Node {
     readonly isGoal: boolean;
+
     #hash: string;
     #target: {
         chord: ChordCursor
@@ -58,6 +60,7 @@ class Node {
         readonly measureIndex: number,
         readonly nStep: number,
         readonly cost: number,
+        readonly thisCost: number,
     ) {
         this.#hash = score.hash();
 
@@ -75,20 +78,19 @@ class Node {
 
         if ('chord' in this.#target) {
             // find harmony
-            const candidates = this.ctx.getChordCandidates(
-                this.score, this.#target.chord);
-            return [...candidates.entries()].map(([chord, cost]) => {
+            const nexts = this.ctx.getChordCandidates(this.score, this.#target.chord);
+
+            return [...nexts.entries()].map(([chord, cost]) => {
                 const newHarmony = this.score.harmony.replaceChord(this.measureIndex, chord);
                 const newScore = this.score.replaceHarmony(newHarmony);
-                // Debug.trace(`${this.measureIndex} -> ${chord.toString()}`);
+
                 return new Node(newScore, this.ctx,
-                    this.measureIndex,
-                    this.nStep + 1,
-                    this.cost + cost);
+                    this.measureIndex, this.nStep,
+                    this.cost * POWER + cost, cost);
             });
         }
 
-        return this.#target.measures.flatMap((x) => {
+        return this.#target.measures.reverse().flatMap((x) => {
             const voice = x.container;
             const nexts = x.value.getNextSteps(this.score, x);
 
@@ -100,9 +102,8 @@ class Node {
                     return [];
                 else {
                     return new Node(newScore, this.ctx,
-                        this.measureIndex,
-                        this.nStep + advanced.value(),
-                        this.cost + cost);
+                        this.measureIndex, this.nStep + advanced.value(),
+                        this.cost * Math.pow(POWER, advanced.value()) + cost, cost);
                 }
             });
             return result;
@@ -114,103 +115,99 @@ class Node {
     }
 }
 
+type VisitedData = {
+    children: Node[],
+};
+
 export class CounterpointSolver {
-    stochastic = false;
-    reportInterval = 100;
+    batch = 5;
+    removeOld = 2; // remove old nodes that are this many measures away
+    reportInterval = 1000;
     onProgress?: (p: CounterpointSolverProgress) => void;
 
     #open?: PriorityQueue<Node>;
-    #closed?: HashMap<Node>;
+    #visited?: HashMap<Node, VisitedData>;
 
     constructor(private ctx: CounterpointContext) {}
 
-    beamSearch(s: Score, size: number) {
-        this.#open = new PriorityQueue<Node>([], (a, b) => a.cost - b.cost);
-        this.#closed = new HashMap<Node>();
-
-        this.#open.push(new Node(s, this.ctx, 0, 0, 0));
-
-        let counter = 0;
-        let measureIndex = 0;
-        while (!this.#open.empty()) {
-            const nexts = new PriorityQueue<Node>([], (a, b) => a.cost - b.cost);
-            while (nexts.size() < size) {
-                const current = this.#open.pop();
-                if (!current) break;
-
-                if (current.isGoal)
-                    return current.score;
-
-                if (current.measureIndex != measureIndex) {
-                    measureIndex = current.measureIndex;
-                    this.onProgress?.({
-                        measureIndex,
-                        totalMeasures: this.ctx.targetMeasures,
-                        iteration: counter,
-                    });
-                }
-
-                const neighbors = this.stochastic
-                    ? shuffle(current.getNeighbors())
-                    : current.getNeighbors();
-
-                for (const neighbor of neighbors)
-                    nexts.push(neighbor);
-            }
-            this.#open = nexts;
-        }
-        return null;
-    }
-
-    aStar(s: Score, strategy: CounterpointSolverRewardStrategy = { type: 'lexicographical' }) {
+    aStar(s: Score, strategy: CounterpointSolverRewardStrategy) {
         let cmp: (a: Node, b: Node) => number;
         switch (strategy.type) {
-            case "lexicographical":
-                cmp = (a, b) => (b.measureIndex - a.measureIndex) || (a.cost - b.cost);
-                break;
             case "constant": {
                 const f = strategy.value;
                 cmp = (a, b) => (a.cost - f * a.nStep) - (b.cost - f * b.nStep);
                 break;
             }
             default:
-                Debug.never(strategy);
+                Debug.never(strategy.type);
         }
 
         this.#open = new PriorityQueue<Node>([], cmp);
-        this.#closed = new HashMap<Node>();
+        this.#visited = new HashMap<Node, VisitedData>();
 
-        this.#open.push(new Node(s, this.ctx, 0, 0, 0));
+        this.#open.push(new Node(s, this.ctx, 0, 0, 0, 0));
 
-        let counter = 0;
-        let measureIndex = 0;
+        let progress = 0;
+        let furthest = 0;
+
+        let nNeighbor = 0;
+        let nNode = 0;
+        let nSkipped = 0;
 
         while (this.#open.length > 0) {
-            const current = this.#open.pop()!;
-            if (current.isGoal)
-                return current.score;
+            const newNodes: Node[] = [];
+            for (let i = 0; i < this.batch; i++) {
+                const current = this.#open.pop();
+                if (!current) break;
 
-            this.#closed.set(current);
+                if (current.isGoal) {
+                    const avgNeighbor = nNeighbor / nNode;
+                    Debug.trace(nNode, nNeighbor, nSkipped,
+                        avgNeighbor.toFixed(5),
+                        (Math.log2(nNode) / Math.log2(avgNeighbor)).toFixed(5));
+                    return current.score;
+                }
 
-            const neighbors = this.stochastic
-                ? shuffle(current.getNeighbors())
-                : current.getNeighbors();
-
-            for (const neighbor of neighbors) {
                 // skip if we already finalized this node
-                if (this.#closed.has(neighbor)) continue;
-                this.#open.push(neighbor);
-            }
+                if (this.#visited.has(current)) {
+                    nSkipped++;
+                    continue;
+                }
 
-            if (current.measureIndex != measureIndex) {
-                measureIndex = current.measureIndex;
-                this.onProgress?.({
-                    measureIndex,
-                    totalMeasures: this.ctx.targetMeasures,
-                    iteration: counter,
-                });
+                const data: VisitedData = {
+                    children: [],
+                };
+                this.#visited.set(current, data);
+
+                if (current.measureIndex < furthest - this.removeOld)
+                    continue;
+
+                if (current.measureIndex > furthest)
+                    furthest = current.measureIndex;
+
+                if (current.measureIndex != progress || nNode % this.reportInterval == 0) {
+                    progress = current.measureIndex;
+                    this.onProgress?.({
+                        measureIndex: progress, furthest,
+                        totalMeasures: this.ctx.targetMeasures,
+                        iteration: nNode,
+                    });
+                }
+
+                if (nNode % (this.reportInterval * 10) == 0) {
+                    const avgNeighbor = nNeighbor / nNode;
+                    Debug.trace(nNode, nNeighbor, nSkipped,
+                        avgNeighbor.toFixed(5),
+                        (Math.log2(nNode) / Math.log2(avgNeighbor)).toFixed(5));
+                }
+
+                const neighbors = current.getNeighbors();
+                nNode++;
+                nNeighbor += neighbors.length;
+                data.children.push(...neighbors);
+                newNodes.push(...neighbors);
             }
-            counter++;
+            newNodes.forEach((x) => this.#open!.push(x));
         }
 
         return null; // No path found

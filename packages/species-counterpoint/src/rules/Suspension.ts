@@ -3,7 +3,7 @@ import { CandidateRule } from "../Context";
 import { isConsonance, isLeadingTone } from "./Utils";
 
 /**
- * Enforce that notes surrounding a passing tone are its neighbors in ascending or descending order.
+ * Enforce that suspensions are resolved correctly.
  */
 export const enforceSuspension: CandidateRule = (_ctx, s, cur, c) => {
     Debug.assert(c !== null);
@@ -36,10 +36,12 @@ export const makeSuspension: CandidateRule = (_ctx, _s, cur, c) => {
     Debug.assert(c !== null);
 
     if (cur.index !== 0) return new HashMap();
-
     const p1 = cur.prevGlobal();
     const prev = p1?.value;
-    if (!prev?.pitch || prev.isNonHarmonic) return new HashMap();
+    if (!prev?.pitch
+      || prev.isNonHarmonic
+      || prev.duration.value() < cur.duration.value()
+    ) return new HashMap();
 
     return c.filter((p) => p.equals(prev.pitch!));
 }

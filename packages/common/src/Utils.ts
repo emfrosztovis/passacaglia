@@ -47,3 +47,10 @@ export function randomWeighted(list: Record<string, number>): string {
     }
     Debug.never(rnd as never);
 }
+
+export function repeat<T>(n: number, f: (i: number) => T): T[] {
+    const result: T[] = [];
+    for (let i = 0; i < n; i++)
+        result.push(f(i));
+    return result;
+}

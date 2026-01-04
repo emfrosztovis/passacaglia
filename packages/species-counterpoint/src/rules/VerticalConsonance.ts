@@ -1,6 +1,35 @@
 import { Debug } from "common";
 import { H } from "../Internal";
-import { CandidateRule } from "../Context";
+import { CandidateRule, LocalRule } from "../Context";
+
+/**
+ * Enforces that the candidates form consonance with voices that are moving at the same point.
+ */
+export const enforceVerticalConsonanceWithMovingLocal: LocalRule
+    = (ctx, s, cur) =>
+{
+    const pitches: H.Pitch[] = [];
+
+    const t = cur.globalTime;
+    for (const voice of s.voices) {
+        const n1 = voice.noteAt(t);
+        if (!n1?.value.pitch || !n1.globalTime.equals(t) || n1.value.type == 'suspension') continue;
+
+        const n2 = n1.prevGlobal();
+        if (!n2?.value.pitch || !n2.value.pitch.equals(n1.value.pitch)) {
+            // moving
+            pitches.push(n1.value.pitch);
+        }
+    }
+
+    for (let i = 0; i < pitches.length - 1; i++)
+        for (let j = i+1; j < pitches.length; j++) {
+            const int = pitches[i].absoluteIntervalTo(pitches[j]).toSimple();
+            const c2 = ctx.harmonyIntervals.get(int);
+            if (!c2) return Infinity;
+        }
+    return 0;
+};
 
 /**
  * Enforces that the candidates form consonance with voices that are moving at the same point.

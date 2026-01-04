@@ -11,7 +11,12 @@ import { NProgress } from 'naive-ui';
 let source = ref('');
 let blob = ref(undefined as string | undefined);
 let result: VoiceData[] | undefined;
-let progress = ref([0, 0] as [number, number]);
+let progress = ref({
+    progress: 0,
+    furthest: 0,
+    total: 1,
+    iteration: 0,
+});
 
 const worker = new Main();
 worker.onmessage = (ev: MessageEvent<MainMessage>) => {
@@ -20,13 +25,13 @@ worker.onmessage = (ev: MessageEvent<MainMessage>) => {
             result = ev.data.data.map(VoiceData.deserialize);
             source.value = ev.data.source;
             blob.value = URL.createObjectURL(new Blob([source.value]));
-            console.log(source.value);
+            // console.log(source.value);
             break;
         case 'no-solution':
             console.log('no solution');
             break;
         case 'progress':
-            progress.value = [ev.data.progress, ev.data.total];
+            progress.value = ev.data;
             break;
         case 'log':
             console.log(...ev.data.message);
@@ -40,8 +45,13 @@ worker.onmessage = (ev: MessageEvent<MainMessage>) => {
 
 <template>
     <div class="container">
-        <NProgress v-if="!source" type="line" :percentage="progress[0] / progress[1] * 100">
-            {{ progress[0] }} / {{ progress[1] }}
+        <NProgress v-if="!source" type="multiple-circle" :percentage="[
+            progress.furthest / progress.total * 100,
+            progress.progress / progress.total * 100,
+        ]">
+            {{ progress.progress }} / {{ progress.total }}
+            <br>
+            {{ (progress.iteration / 1000).toFixed(0) }}k
         </NProgress>
         <button v-if="result" @click="play(result, [74, 74, 20, 53], { tempo: 180, synth: true })">
             play

@@ -5,11 +5,55 @@ import { CandidateRule, LocalRule } from "../Context";
 /**
  * Only allow melodic intervals specified in CounterpointContext in the melody.
  */
+export const forbidVoiceOverlapping2: CandidateRule = (ctx, s, cur, c, type) =>
+{
+    Debug.assert(c !== null);
+
+    let upper: number | undefined;
+    let lower: number | undefined;
+
+    const iv = cur.parent.container.index;
+    const end = cur.globalEndTime.value();
+    if (iv > 0) {
+        const v = s.voices[iv - 1];
+        for (let cur2 = v.noteAt(cur.globalTime);
+             cur2 && cur2.globalTime.value() < end;
+             cur2 = cur2.nextGlobal())
+        {
+            const nord = cur2.value.pitch?.ord().value();
+            if (!nord) continue;
+            if (upper === undefined || nord < upper)
+                upper = nord;
+        }
+    }
+    if (iv < s.voices.length - 1) {
+        const v = s.voices[iv + 1];
+        for (let cur2 = v.noteAt(cur.globalTime);
+             cur2 && cur2.globalTime.value() < end;
+             cur2 = cur2.nextGlobal())
+        {
+            const nord = cur2.value.pitch?.ord().value();
+            if (!nord) continue;
+            if (lower === undefined || nord > lower)
+                lower = nord;
+        }
+    }
+
+    return c.filter((p) => {
+        const ord = p.ord().value();
+        if (upper !== undefined && ord > upper) return false;
+        if (lower !== undefined && ord < lower) return false;
+        return true;
+    })
+}
+
+/**
+ * Only allow melodic intervals specified in CounterpointContext in the melody.
+ */
 export const enforceMelodyIntervals: CandidateRule = (ctx, _s, cur, c, type) =>
 {
     Debug.assert(c !== null);
-    // if (type == 'passing_tone' && ctx.allowChromaticPassingTones)
-    //     return c;
+    if (type == 'suspension') return c;
 
     const p1 = cur.prevGlobal();
     const prev = p1?.value;
@@ -20,7 +64,7 @@ export const enforceMelodyIntervals: CandidateRule = (ctx, _s, cur, c, type) =>
 
     const v = cur.parent.container;
     let ints = [...ctx.melodicIntervals.entries()];
-    if (v.melodySettings?.forbidRepeatedNotes && type !== 'suspension')
+    if (v.melodySettings?.forbidRepeatedNotes)
         ints = ints.filter(([x, _]) => x.distance.num > 0);
 
     const sign = (prev2?.pitch && prev2.pitch.ord() > prev.pitch.ord()) ? -1 : 1;
@@ -30,8 +74,22 @@ export const enforceMelodyIntervals: CandidateRule = (ctx, _s, cur, c, type) =>
             [prev.pitch!.add(x.withSign((x.sign * sign) as -1 | 1)), cost])
     );
 
-
     return c.intersectWith(nexts, (a, b) => a + b);
+};
+
+/**
+ * Only allow stepwise motion around notes shorter than a quarter note.
+ */
+export const enforceStepwiseAroundShortNotes: CandidateRule = (ctx, _s, cur, c, type) =>
+{
+    Debug.assert(c !== null);
+
+    const p1 = cur.prevGlobal();
+    const prev = p1?.value.pitch;
+    if (!prev) return c;
+
+    if (cur.duration.value() >= 1 && p1.duration.value() >= 1) return c;
+    return c.filter((p) => Math.abs(prev.stepsTo(p)) == 1);
 };
 
 /**

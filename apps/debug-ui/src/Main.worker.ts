@@ -1,10 +1,10 @@
-import { CounterpointContext, CounterpointScoreBuilder, CounterpointSolver, FifthSpecies, FirstSpecies, FourthSpecies, parseNotes, Rules, SecondSpecies, ThirdSpecies, VoiceData } from 'species-counterpoint';
+import { CounterpointContext, CounterpointScoreBuilder, CounterpointSolver, parseNotes, Rules, Species1, Species2, Species3, Species4, Species5, VoiceData } from 'species-counterpoint';
 import { Debug, LogLevel, Rational, setLogger, type Serialized } from 'common';
 import { StandardHeptatonic } from 'core';
 import { Clef, toMxl } from 'musicxml';
 
 const ctx = new CounterpointContext(
-    10, // targetMeasures
+    9, // targetMeasures
     {
         measureLength: new Rational(4)
     }
@@ -15,49 +15,49 @@ ctx.harmonyRules = [
 ];
 
 ctx.localRules = [
-    Rules.limitConsecutiveLeaps,
-    Rules.forbidPerfectsBySimilarMotion,
-    Rules.forbidNearbyPerfects,
-    Rules.forbidVoiceOverlapping,
+    // Rules.forbidVoiceOverlapping,
+    // Rules.limitConsecutiveLeaps,
+    // Rules.forbidPerfectsBySimilarMotion,
+    // Rules.forbidNearbyPerfects,
     Rules.prioritizeVoiceMotion,
+    // Rules.enforceVerticalConsonanceWithMovingLocal,
 ];
 
 ctx.candidateRulesBefore = [
     Rules.enforceScaleTones,
-    Rules.enforceDirectionalDegreeMatrix(Rules.DegreeMatrixPreset.major),
+    // Rules.enforceDirectionalDegreeMatrix(Rules.DegreeMatrixPreset.major),
     // Rules.enforceMinor(StandardHeptatonic.PitchClasses.c),
-    Rules.enforcePassingTones,
+    // Rules.enforceStepwiseAroundShortNotes,
+    // Rules.enforcePassingTones,
     Rules.enforceNeighborTones,
-    Rules.enforceSuspension,
+    // Rules.enforceSuspension,
+    // Rules.forbidVoiceOverlapping2,
 ];
 
 ctx.candidateRulesAfter = [
     Rules.enforceMelodyIntervals,
-    Rules.enforceLeapPreparationBefore,
-    Rules.enforceLeapPreparationAfter,
+    // Rules.enforceLeapPreparationBefore,
+    // Rules.enforceLeapPreparationAfter,
 ];
 
 ctx.harmonicToneRules = [
     Rules.enforceChordTone,
-    Rules.enforceVerticalConsonanceStrict,
+    // Rules.enforceVerticalConsonanceStrict
 ];
 
 ctx.nonHarmonicToneRules = {
-    'neighbor': [
-        Rules.makeNeighborTone,
-        Rules.enforceVerticalConsonanceWithMoving
-    ],
-    'passing_tone': [
-        Rules.makePassingTone,
-        Rules.enforceVerticalConsonanceWithMoving
-    ],
-    'suspension': [
-        Rules.makeSuspension
-    ],
+    // 'neighbor': [
+    //     Rules.makeNeighborTone,
+    // ],
+    // 'passing_tone': [
+    //     Rules.makePassingTone,
+    // ],
+    // 'suspension': [
+    //     Rules.makeSuspension
+    // ],
 };
 
 // ctx.allowUnison = true;
-ctx.stochastic = true;
 
 const score = new CounterpointScoreBuilder(ctx)
     // .cantus(Clef.Treble, [
@@ -74,39 +74,42 @@ const score = new CounterpointScoreBuilder(ctx)
     //     parseNotes(['b4', ctx.parameters.measureLength]),
     //     parseNotes(['c5', ctx.parameters.measureLength]),
     // ])
-    // .soprano(FourthSpecies)
-    .soprano(FifthSpecies)
-    .alto(FifthSpecies)
-    // .tenor(FifthSpecies)
-    // .cantus(Clef.Bass, [
-    //     parseNotes(['c3', ctx.parameters.measureLength]),
-    //     parseNotes(['d3', ctx.parameters.measureLength]),
-    //     parseNotes(['e3', ctx.parameters.measureLength]),
-    //     parseNotes(['g3', ctx.parameters.measureLength]),
-    //     parseNotes(['f3', ctx.parameters.measureLength]),
-    //     parseNotes(['d3', ctx.parameters.measureLength]),
-    //     parseNotes(['b2', ctx.parameters.measureLength]),
-    //     parseNotes(['c3', ctx.parameters.measureLength]),
-    //     parseNotes(['d3', ctx.parameters.measureLength]),
-    //     parseNotes(['e3', ctx.parameters.measureLength]),
-    //     parseNotes(['g3', ctx.parameters.measureLength]),
-    //     parseNotes(['f3', ctx.parameters.measureLength]),
-    //     parseNotes(['d3', ctx.parameters.measureLength]),
-    //     parseNotes(['b2', ctx.parameters.measureLength]),
-    //     parseNotes(['c3', ctx.parameters.measureLength]),
-    // ])
+    .soprano(Species3)
+    .alto(Species3)
+    .tenor(Species3)
+    // .bass(Species1)
     .cantus(Clef.Bass, [
-        parseNotes(['c4', ctx.parameters.measureLength]),
-        parseNotes(['a3', ctx.parameters.measureLength]),
-        parseNotes(['g3', ctx.parameters.measureLength]),
+        parseNotes(['c3', ctx.parameters.measureLength]),
+        parseNotes(['d3', ctx.parameters.measureLength]),
         parseNotes(['e3', ctx.parameters.measureLength]),
-        parseNotes(['f3', ctx.parameters.measureLength]),
-        parseNotes(['a3', ctx.parameters.measureLength]),
         parseNotes(['g3', ctx.parameters.measureLength]),
+        parseNotes(['a3', ctx.parameters.measureLength]),
+        parseNotes(['f3', ctx.parameters.measureLength]),
         parseNotes(['e3', ctx.parameters.measureLength]),
         parseNotes(['d3', ctx.parameters.measureLength]),
         parseNotes(['c3', ctx.parameters.measureLength]),
     ])
+    // .cantus(Clef.Bass, [
+    //     parseNotes(['c4', ctx.parameters.measureLength]),
+    //     parseNotes(['a3', ctx.parameters.measureLength]),
+    //     parseNotes(['g3', ctx.parameters.measureLength]),
+    //     parseNotes(['e3', ctx.parameters.measureLength]),
+    //     parseNotes(['f3', ctx.parameters.measureLength]),
+    //     parseNotes(['a3', ctx.parameters.measureLength]),
+    //     parseNotes(['g3', ctx.parameters.measureLength]),
+    //     parseNotes(['e3', ctx.parameters.measureLength]),
+    //     parseNotes(['d3', ctx.parameters.measureLength]),
+    //     parseNotes(['c3', ctx.parameters.measureLength]),
+    //     parseNotes(['a3', ctx.parameters.measureLength]),
+    //     parseNotes(['g3', ctx.parameters.measureLength]),
+    //     parseNotes(['e3', ctx.parameters.measureLength]),
+    //     parseNotes(['f3', ctx.parameters.measureLength]),
+    //     parseNotes(['a3', ctx.parameters.measureLength]),
+    //     parseNotes(['g3', ctx.parameters.measureLength]),
+    //     parseNotes(['e3', ctx.parameters.measureLength]),
+    //     parseNotes(['d3', ctx.parameters.measureLength]),
+    //     parseNotes(['c3', ctx.parameters.measureLength]),
+    // ])
     .build(StandardHeptatonic.Scales.C.major);
 
 Debug.level = LogLevel.Trace;
@@ -119,25 +122,24 @@ setLogger((level, message) => {
 
 const solver = new CounterpointSolver(ctx);
 
-let progress = 0;
 solver.onProgress = (p) => {
-    if (p.measureIndex != progress) {
-        progress = p.measureIndex;
-        postMessage({
-            type: 'progress',
-            progress,
-            total: p.totalMeasures
-        } satisfies MainMessage);
-    }
+    postMessage({
+        type: 'progress',
+        progress: p.measureIndex,
+        furthest: p.furthest,
+        total: p.totalMeasures,
+        iteration: p.iteration
+    } satisfies MainMessage);
 }
+
+solver.removeOld = 10;
+solver.batch = 1;
+solver.reportInterval = 1000;
 
 const result = solver.aStar(score, {
     type: 'constant',
-    value: 150,
+    value: 100,
 });
-// const result = solver.aStar(score, {
-//     type: 'lexicographical',
-// });
 // const result = solver.beamSearch(score, 200);
 
 console.log(result?.toString());
@@ -167,5 +169,7 @@ export type MainMessage = {
 } | {
     type: 'progress',
     progress: number,
-    total: number
+    furthest: number,
+    total: number,
+    iteration: number
 };

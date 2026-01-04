@@ -13,7 +13,7 @@ export function pitch(x: H.Pitch) {
 export function note(n: NoteLike, tieStart = false) {
     if (n.pitch) return {
         pitch: pitch(n.pitch),
-        duration: n.duration.value(),
+        duration: n.duration.mul(2).value(),
         notations: n.isTied || tieStart
             ? {
                 tied: {
@@ -26,7 +26,7 @@ export function note(n: NoteLike, tieStart = false) {
             } : undefined,
     }; else return {
         rest: {},
-        duration: n.duration.value()
+        duration: n.duration.mul(2).value()
     };
 }
 
@@ -51,7 +51,7 @@ export function measure(
             }
         } : undefined,
         attributes: m.index == 0 ? {
-            divisions: 1,
+            divisions: 2,
             clef: {
                 sign: v.clef.type,
                 line: v.clef.line,

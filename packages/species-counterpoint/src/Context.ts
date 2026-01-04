@@ -35,8 +35,8 @@ export class CounterpointContext {
     nonHarmonicToneRules: Partial<Record<NonHarmonicType, CandidateRule[]>> = {};
     harmonicToneRules: CandidateRule[] = [];
 
-    similarMotionCost = 40;
-    obliqueMotionCost = 20;
+    similarMotionCost = 80;
+    obliqueMotionCost = 40;
     contraryMotionCost = 0;
 
     harmonyIntervals = parsePreferred(
@@ -49,7 +49,7 @@ export class CounterpointContext {
         ['P4',  90],              ['-P4',  90],
         ['P5',  90],              ['-P5',  90],
         ['m6',  90], ['M6',  90], ['-m6',  90], ['-M6',  90],
-        ['P8',  90],              ['-P8',  90],
+        ['P8', 120],              ['-P8', 120],
         ['P1', 500],
     );
 
@@ -114,7 +114,7 @@ export class CounterpointContext {
         for (const type of types) {
             const rules = this.nonHarmonicToneRules[type];
             if (!rules) {
-                Debug.info('no rules for', type);
+                // Debug.info('no rules for', type);
                 continue;
             }
             results.push(...this.fillIn(rules, s, note, type, create, costOffset));
@@ -148,9 +148,10 @@ export class CounterpointContext {
             const newScore = s.replaceVoice(voice.index, newVoice);
             const newCursor = newVoice.noteAt(note.globalTime) as CounterpointNoteCursor;
             Debug.assert(newCursor !== undefined);
+
             for (const rule of this.localRules) {
                 const c = rule(this, newScore, newCursor);
-                if (c == Infinity) return [];
+                if (c === Infinity) return [];
                 cost += c;
             }
             return { measure: m, cost: cost + costOffset, advanced: note.duration };

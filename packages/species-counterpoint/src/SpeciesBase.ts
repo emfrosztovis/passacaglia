@@ -3,25 +3,28 @@ import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor,
 import { CounterpointContext } from "./Context";
 import { Score } from "./Score";
 import { MeasureCursor, NonHarmonicType, Note } from "./Voice";
-import { ThirdSpeciesMeasure } from "./Species3";
 
-type NoteSchema = {
+export type NoteSchema = {
     harmonic: boolean,
-    type: NonHarmonicType[],
+    types?: NonHarmonicType[],
     duration: Rational,
 } | {
     skip: true,
     duration: Rational,
 };
 
-type MeasureSchema = {
+export type MeasureSchema = {
     name: string;
-    notes: NoteSchema[];
-    condition?: (cur: MeasureCursor<SpeciesMeasure>) => boolean;
+    notes: (cxt: CounterpointContext) => NoteSchema[];
+    condition?: (cur: MeasureCursor<SpeciesMeasure>, s: Score) => boolean;
     cost?: number;
 };
 
-class SpeciesMeasure extends CounterpointMeasure {
+export class SpeciesMeasure extends CounterpointMeasure {
+    get schemaName() {
+        return this.schema.name;
+    }
+
     get writable() {
         return !this.elements.at(-1)?.pitch;
     };
@@ -34,7 +37,7 @@ class SpeciesMeasure extends CounterpointMeasure {
     ) {
         if (!notes) {
             notes = [];
-            for (const n of schema.notes)
+            for (const n of schema.notes(ctx))
                 notes.push(new Note(n.duration));
         }
         super(notes, ctx, mc);
@@ -48,21 +51,24 @@ class SpeciesMeasure extends CounterpointMeasure {
     }
 
     getNextSteps(s: Score, c: CounterpointMeasureCursor): Step[] {
+        const notes = this.schema.notes(this.ctx);
+
         // @ts-expect-error
         const ci: CounterpointNoteCursor = this.find(
             (x) => x.value.pitch === null
-                && ('type' in this.schema.notes[x.index])
+                && ('harmonic' in notes[x.index])
         // @ts-expect-error
         )!.withParent(c);
 
-        const schema = this.schema.notes[ci.index];
-        Debug.assert('type' in schema);
+        const schema = notes[ci.index];
+        Debug.assert('harmonic' in schema);
         const next: Step[] = [];
         if (schema.harmonic)
             next.push(...this.ctx.fillHarmonicTone(
                 s, ci, (n) => this.#replace(ci.index, n)));
-        next.push(...this.ctx.fillNonHarmonicTone(schema.type,
-            s, ci, (n) => this.#replace(ci.index, n)));
+        if (schema.types)
+            next.push(...this.ctx.fillNonHarmonicTone(schema.types,
+                s, ci, (n) => this.#replace(ci.index, n)));
         return next;
     }
 
@@ -89,11 +95,11 @@ export function defineSpecies(m: MelodicSettings, schema: MeasureSchema[]): Voic
                 this.lowerRange, this.higherRange, this.name, this.clef) as this;
         }
 
-        makeNewMeasure = (_s: Score, c: CounterpointMeasureCursor) => {
+        makeNewMeasure = (score: Score, c: CounterpointMeasureCursor) => {
             const mc = c.prevGlobal()?.value.melodicContext ?? emptyMelodicContext();
             const cur = c as unknown as MeasureCursor<SpeciesMeasure>;
             return schema.flatMap((s) => {
-                if (!s.condition || s.condition(cur))
+                if (!s.condition || s.condition(cur, score))
                     return { measure: new SpeciesMeasure(this.ctx, mc, s), cost: s.cost ?? 0 };
                 return [];
             });
