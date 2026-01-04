@@ -11,8 +11,14 @@
   "dependencies": {
     "common": "workspace:*",
     "core": "workspace:*",
+    "graphology": "^0.26.0",
+    "graphology-dag": "^0.4.1",
+    "graphology-layout": "^0.6.1",
+    "graphology-layout-forceatlas2": "^0.10.1",
+    "graphology-layout-noverlap": "^0.4.2",
     "musicxml": "workspace:*",
     "opensheetmusicdisplay": "^1.9.3",
+    "sigma": "^3.0.2",
     "species-counterpoint": "workspace:*",
     "vue": "^3.5.24"
   },

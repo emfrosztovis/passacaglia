@@ -8,9 +8,19 @@ import type { MainMessage } from './Main.worker';
 import { Debug } from 'common';
 import { NProgress } from 'naive-ui';
 
+import Sigma from './components/Sigma.vue';
+import Graph, { DirectedGraph } from 'graphology';
+import { circular } from 'graphology-layout';
+import forceAtlas2 from 'graphology-layout-forceatlas2';
+import noverlap from 'graphology-layout-noverlap';
+import { sugiyama } from './Sugiyama';
+
 let source = ref('');
 let blob = ref(undefined as string | undefined);
+let graph = ref<Graph | undefined>();
+
 let result: VoiceData[] | undefined;
+
 let progress = ref({
     progress: 0,
     furthest: 0,
@@ -25,7 +35,8 @@ worker.onmessage = (ev: MessageEvent<MainMessage>) => {
             result = ev.data.data.map(VoiceData.deserialize);
             source.value = ev.data.source;
             blob.value = URL.createObjectURL(new Blob([source.value]));
-            // console.log(source.value);
+            graph.value = DirectedGraph.from(ev.data.graph as any);
+            sugiyama(graph.value, 50);
             break;
         case 'no-solution':
             console.log('no solution');
@@ -36,11 +47,13 @@ worker.onmessage = (ev: MessageEvent<MainMessage>) => {
         case 'log':
             console.log(...ev.data.message);
             break;
+        case 'query-score-result':
+            source.value = ev.data.source;
+            break;
         default:
             Debug.never(ev.data);
     }
 }
-
 </script>
 
 <template>
@@ -60,6 +73,7 @@ worker.onmessage = (ev: MessageEvent<MainMessage>) => {
             download
         </a>
         <MusicScore v-if="source" :file="source" />
+        <Sigma v-if="graph" :graph="graph" />
     </div>
 </template>
 

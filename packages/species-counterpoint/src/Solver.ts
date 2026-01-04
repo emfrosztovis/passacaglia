@@ -1,7 +1,7 @@
 import { PriorityQueue } from "@js-sdsl/priority-queue";
 import { Score } from "./Score";
 import { CounterpointContext } from "./Context";
-import { Debug, HashMap, shuffle } from "common";
+import { Debug, Hashable, HashMap, shuffle } from "common";
 import { CounterpointMeasureCursor, CounterpointVoice } from "./Basic";
 import { ChordCursor } from "./Chord";
 
@@ -25,7 +25,25 @@ export type CounterpointSolverProgress = {
 
 const POWER = 0.9;
 
-class Node {
+export interface INode extends Hashable {
+    readonly id: number;
+    readonly isGoal: boolean;
+    readonly score: Score;
+    readonly measureIndex: number,
+    readonly voiceIndex?: number,
+    readonly nStep: number,
+    readonly cost: number,
+    readonly thisCost: number,
+    readonly nExpanded?: number,
+}
+
+export type VisitedData = {
+    children: INode[],
+};
+
+class Node implements INode {
+    static id = 0;
+
     readonly isGoal: boolean;
 
     #hash: string;
@@ -54,15 +72,22 @@ class Node {
         }
     }
 
+    readonly id: number;
+    nExpanded?: number;
+
     constructor(
         public score: Score,
         private ctx: CounterpointContext,
         readonly measureIndex: number,
+        readonly voiceIndex: number | undefined,
         readonly nStep: number,
         readonly cost: number,
         readonly thisCost: number,
     ) {
         this.#hash = score.hash();
+
+        this.id = Node.id;
+        Node.id++;
 
         this.isGoal = false;
         while (this.measureIndex < ctx.targetMeasures) {
@@ -71,6 +96,7 @@ class Node {
             this.measureIndex++;
         }
         this.isGoal = true;
+
     }
 
     getNeighbors(): Node[] {
@@ -85,7 +111,7 @@ class Node {
                 const newScore = this.score.replaceHarmony(newHarmony);
 
                 return new Node(newScore, this.ctx,
-                    this.measureIndex, this.nStep,
+                    this.measureIndex, -1, this.nStep,
                     this.cost * POWER + cost, cost);
             });
         }
@@ -102,7 +128,7 @@ class Node {
                     return [];
                 else {
                     return new Node(newScore, this.ctx,
-                        this.measureIndex, this.nStep + advanced.value(),
+                        this.measureIndex, voice.index, this.nStep + advanced.value(),
                         this.cost * Math.pow(POWER, advanced.value()) + cost, cost);
                 }
             });
@@ -115,18 +141,24 @@ class Node {
     }
 }
 
-type VisitedData = {
-    children: Node[],
-};
-
 export class CounterpointSolver {
+    limitSteps = -1;
     batch = 5;
     removeOld = 2; // remove old nodes that are this many measures away
     reportInterval = 1000;
     onProgress?: (p: CounterpointSolverProgress) => void;
 
     #open?: PriorityQueue<Node>;
-    #visited?: HashMap<Node, VisitedData>;
+    #parents?: HashMap<Node, Node>;
+    #start?: Node;
+
+    get parents(): HashMap<INode, INode> | undefined {
+        return this.#parents;
+    }
+
+    get startNode(): INode | undefined {
+        return this.#start;
+    }
 
     constructor(private ctx: CounterpointContext) {}
 
@@ -143,9 +175,10 @@ export class CounterpointSolver {
         }
 
         this.#open = new PriorityQueue<Node>([], cmp);
-        this.#visited = new HashMap<Node, VisitedData>();
+        this.#parents = new HashMap<Node, Node>();
 
-        this.#open.push(new Node(s, this.ctx, 0, 0, 0, 0));
+        this.#start = new Node(s, this.ctx, 0, -1, 0, 0, 0);
+        this.#open.push(this.#start);
 
         let progress = 0;
         let furthest = 0;
@@ -167,17 +200,6 @@ export class CounterpointSolver {
                         (Math.log2(nNode) / Math.log2(avgNeighbor)).toFixed(5));
                     return current.score;
                 }
-
-                // skip if we already finalized this node
-                if (this.#visited.has(current)) {
-                    nSkipped++;
-                    continue;
-                }
-
-                const data: VisitedData = {
-                    children: [],
-                };
-                this.#visited.set(current, data);
 
                 if (current.measureIndex < furthest - this.removeOld)
                     continue;
@@ -201,11 +223,18 @@ export class CounterpointSolver {
                         (Math.log2(nNode) / Math.log2(avgNeighbor)).toFixed(5));
                 }
 
-                const neighbors = current.getNeighbors();
+                const neighbors = current
+                    .getNeighbors()
+                    .filter((x) => !this.#parents?.has(x));
+                newNodes.push(...neighbors);
+                neighbors.forEach((x) => this.#parents?.set(x, current));
+                current.nExpanded = neighbors.length;
+
                 nNode++;
                 nNeighbor += neighbors.length;
-                data.children.push(...neighbors);
-                newNodes.push(...neighbors);
+
+                if (this.limitSteps > 0 && nNode > this.limitSteps)
+                    return null;
             }
             newNodes.forEach((x) => this.#open!.push(x));
         }
