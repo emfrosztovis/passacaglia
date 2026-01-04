@@ -4,7 +4,7 @@ import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice, emptyMelodicContext, MelodicContext, Step } from "./Basic";
 import { Score } from "./Score";
 
-class ThirdSpeciesMeasure extends CounterpointMeasure {
+export class ThirdSpeciesMeasure extends CounterpointMeasure {
     get writable() {
         return !this.elements.at(-1)?.pitch;
     };
@@ -12,8 +12,14 @@ class ThirdSpeciesMeasure extends CounterpointMeasure {
     constructor(
         ctx: CounterpointContext,
         mc: MelodicContext,
-        notes: Note[],
+        notes?: Note[],
     ) {
+        if (!notes) {
+            const len = ctx.parameters.measureLength.value();
+            notes = [];
+            for (let i = 0; i < len; i++)
+                notes.push(new Note(new Rational(1)));
+        }
         super(notes, ctx, mc);
         Debug.assert(notes.length == ctx.parameters.measureLength.value());
     }
@@ -78,13 +84,8 @@ export class ThirdSpecies extends CounterpointVoice {
 
     makeNewMeasure = (_s: Score, c: CounterpointMeasureCursor) => {
         const last = c.prevGlobal()?.value.melodicContext;
-        const notes: Note[] = [];
-        const len = this.ctx.parameters.measureLength.value();
-        for (let i = 0; i < len; i++)
-            notes.push(new Note(new Rational(1)));
-
         return [{
-            measure: new ThirdSpeciesMeasure(this.ctx, last ?? emptyMelodicContext(), notes),
+            measure: new ThirdSpeciesMeasure(this.ctx, last ?? emptyMelodicContext()),
             cost: 0,
         }];
     };

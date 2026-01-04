@@ -4,7 +4,7 @@ import { CounterpointContext } from "./Context";
 import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointVoice, emptyMelodicContext, MelodicContext } from "./Basic";
 import { Score } from "./Score";
 
-class SecondSpeciesMeasure extends CounterpointMeasure {
+export class SecondSpeciesMeasure extends CounterpointMeasure {
     get writable() {
         return this.elements[1].pitch === null;
     };

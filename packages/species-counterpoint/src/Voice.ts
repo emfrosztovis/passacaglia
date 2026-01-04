@@ -60,7 +60,7 @@ export class Note implements DurationalElement, NoteLike, Serializable, Hashable
     }
 }
 
-export type MeasureCursor = SequentialCursor<Measure, Voice, never>;
+export type MeasureCursor<M extends Measure = Measure> = SequentialCursor<M, Voice<M>, never>;
 
 // @ts-expect-error
 export type NoteCursor = SequentialCursor<Note, Measure, MeasureCursor>;

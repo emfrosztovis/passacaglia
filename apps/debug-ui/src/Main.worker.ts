@@ -1,12 +1,12 @@
-import { CounterpointContext, CounterpointScoreBuilder, CounterpointSolver, FirstSpecies, FourthSpecies, parseNotes, Rules, SecondSpecies, ThirdSpecies, VoiceData } from 'species-counterpoint';
+import { CounterpointContext, CounterpointScoreBuilder, CounterpointSolver, FifthSpecies, FirstSpecies, FourthSpecies, parseNotes, Rules, SecondSpecies, ThirdSpecies, VoiceData } from 'species-counterpoint';
 import { Debug, LogLevel, Rational, setLogger, type Serialized } from 'common';
 import { StandardHeptatonic } from 'core';
 import { Clef, toMxl } from 'musicxml';
 
 const ctx = new CounterpointContext(
-    12, // targetMeasures
+    10, // targetMeasures
     {
-        measureLength: new Rational(6)
+        measureLength: new Rational(4)
     }
 );
 
@@ -24,7 +24,7 @@ ctx.localRules = [
 
 ctx.candidateRulesBefore = [
     Rules.enforceScaleTones,
-    // Rules.enforceDirectionalDegreeMatrix(Rules.DegreeMatrixPreset.major),
+    Rules.enforceDirectionalDegreeMatrix(Rules.DegreeMatrixPreset.major),
     // Rules.enforceMinor(StandardHeptatonic.PitchClasses.c),
     Rules.enforcePassingTones,
     Rules.enforceNeighborTones,
@@ -57,27 +57,27 @@ ctx.nonHarmonicToneRules = {
 };
 
 // ctx.allowUnison = true;
-// ctx.stochastic = true;
+ctx.stochastic = true;
 
 const score = new CounterpointScoreBuilder(ctx)
-    .cantus(Clef.Treble, [
-        parseNotes(['c5', ctx.parameters.measureLength]),
-        parseNotes(['d5', ctx.parameters.measureLength]),
-        parseNotes(['e5', ctx.parameters.measureLength]),
-        parseNotes(['d5', ctx.parameters.measureLength]),
-        parseNotes(['c5', ctx.parameters.measureLength]),
-        parseNotes(['a4', ctx.parameters.measureLength]),
-        parseNotes(['b4', ctx.parameters.measureLength]),
-        parseNotes(['g4', ctx.parameters.measureLength]),
-        parseNotes(['e4', ctx.parameters.measureLength]),
-        parseNotes(['a4', ctx.parameters.measureLength]),
-        parseNotes(['b4', ctx.parameters.measureLength]),
-        parseNotes(['c5', ctx.parameters.measureLength]),
-    ])
+    // .cantus(Clef.Treble, [
+    //     parseNotes(['c5', ctx.parameters.measureLength]),
+    //     parseNotes(['d5', ctx.parameters.measureLength]),
+    //     parseNotes(['e5', ctx.parameters.measureLength]),
+    //     parseNotes(['d5', ctx.parameters.measureLength]),
+    //     parseNotes(['c5', ctx.parameters.measureLength]),
+    //     parseNotes(['a4', ctx.parameters.measureLength]),
+    //     parseNotes(['b4', ctx.parameters.measureLength]),
+    //     parseNotes(['g4', ctx.parameters.measureLength]),
+    //     parseNotes(['e4', ctx.parameters.measureLength]),
+    //     parseNotes(['a4', ctx.parameters.measureLength]),
+    //     parseNotes(['b4', ctx.parameters.measureLength]),
+    //     parseNotes(['c5', ctx.parameters.measureLength]),
+    // ])
     // .soprano(FourthSpecies)
-    // .soprano(FourthSpecies)
-    .alto(ThirdSpecies)
-    .tenor(FirstSpecies)
+    .soprano(FifthSpecies)
+    .alto(FifthSpecies)
+    // .tenor(FifthSpecies)
     // .cantus(Clef.Bass, [
     //     parseNotes(['c3', ctx.parameters.measureLength]),
     //     parseNotes(['d3', ctx.parameters.measureLength]),
@@ -95,6 +95,18 @@ const score = new CounterpointScoreBuilder(ctx)
     //     parseNotes(['b2', ctx.parameters.measureLength]),
     //     parseNotes(['c3', ctx.parameters.measureLength]),
     // ])
+    .cantus(Clef.Bass, [
+        parseNotes(['c4', ctx.parameters.measureLength]),
+        parseNotes(['a3', ctx.parameters.measureLength]),
+        parseNotes(['g3', ctx.parameters.measureLength]),
+        parseNotes(['e3', ctx.parameters.measureLength]),
+        parseNotes(['f3', ctx.parameters.measureLength]),
+        parseNotes(['a3', ctx.parameters.measureLength]),
+        parseNotes(['g3', ctx.parameters.measureLength]),
+        parseNotes(['e3', ctx.parameters.measureLength]),
+        parseNotes(['d3', ctx.parameters.measureLength]),
+        parseNotes(['c3', ctx.parameters.measureLength]),
+    ])
     .build(StandardHeptatonic.Scales.C.major);
 
 Debug.level = LogLevel.Trace;
@@ -121,7 +133,7 @@ solver.onProgress = (p) => {
 
 const result = solver.aStar(score, {
     type: 'constant',
-    value: 50,
+    value: 150,
 });
 // const result = solver.aStar(score, {
 //     type: 'lexicographical',

@@ -1,7 +1,6 @@
-import { Debug, shuffle } from "common";
-import { AStar, AStarNode } from "./AStar";
+import { Debug } from "common";
 import { NonHarmonicType, Note } from "./Voice";
-import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor, CounterpointVoice, MelodicContext, Step } from "./Basic";
+import { CounterpointMeasure, CounterpointNoteCursor, MelodicContext, Step } from "./Basic";
 import { HashMap } from "common";
 import { parsePreferred } from "./rules/Scales";
 import { H } from "./Internal";
@@ -36,39 +35,38 @@ export class CounterpointContext {
     nonHarmonicToneRules: Partial<Record<NonHarmonicType, CandidateRule[]>> = {};
     harmonicToneRules: CandidateRule[] = [];
 
-    advanceReward = 20;
-    similarMotionCost = 10;
-    obliqueMotionCost = 0;
-    contraryMotionCost = -10;
+    similarMotionCost = 40;
+    obliqueMotionCost = 20;
+    contraryMotionCost = 0;
 
     harmonyIntervals = parsePreferred(
-        ['m3', 0], ['M3', 0], ['m6', 0], ['M6', 0], ['P4', 10], ['P5', 20], ['P8', 50], ['P1', 100]);
+        ['m3', 0], ['M3', 0], ['m6', 0], ['M6', 0],
+        ['P4', 10], ['P5', 20], ['P8', 50], ['P1', 100]);
 
     melodicIntervals = parsePreferred(
-        ['m2',    0], ['M2',    0], ['-m2',  30], ['-M2',  30],
-        ['m3',   50], ['M3',   50], ['-m3',  50], ['-M3',  50],
-        ['P4',   60],               ['-P4',  60],
-        ['P5',   60],               ['-P5',  60],
-        ['m6',   70], ['M6',   70], ['-m6',  70], ['-M6',  70],
-        ['P8',   80],               ['-P8',  80],
-        ['P1', 100],
+        ['m2',   0], ['M2',   0], ['-m2',  40], ['-M2',  40],
+        ['m3',  90], ['M3',  90], ['-m3',  90], ['-M3',  90],
+        ['P4',  90],              ['-P4',  90],
+        ['P5',  90],              ['-P5',  90],
+        ['m6',  90], ['M6',  90], ['-m6',  90], ['-M6',  90],
+        ['P8',  90],              ['-P8',  90],
+        ['P1', 500],
     );
 
     forbidWithBass = [H.Interval.parse('P4')!];
     allowUnison = false;
-
     stochastic = false;
 
-    updateMelodicContext(old: MelodicContext, p: H.Pitch): MelodicContext {
+    updateMelodicContext(old: MelodicContext, p: H.Pitch | null): MelodicContext {
         if (old.lastPitch === undefined) return {
             ...old,
-            lastPitch: p
+            lastPitch: p ?? undefined
         };
-        const int = old.lastPitch.intervalTo(p);
-        if (int.steps <= 1) {
+        const int = p ? old.lastPitch.intervalTo(p) : undefined;
+        if (!int || int.steps <= 1) {
             // clear leaps
             return {
-                lastPitch: p,
+                lastPitch: p ?? undefined,
                 leapDirection: 0,
                 nConsecutiveLeaps: 0,
                 n3rdLeaps: 0,
@@ -79,7 +77,7 @@ export class CounterpointContext {
         const isThird = int.steps == 2;
         const isUnidirectional = int.sign == old.leapDirection;
         return {
-            lastPitch: p,
+            lastPitch: p ?? undefined,
             leapDirection: int.sign,
             nConsecutiveLeaps: old.nConsecutiveLeaps + 1,
             n3rdLeaps: old.n3rdLeaps + (isThird ? 1 : 0),
