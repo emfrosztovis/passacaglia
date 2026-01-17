@@ -3,6 +3,7 @@ import { CounterpointMeasure, CounterpointMeasureCursor, CounterpointNoteCursor,
 import { CounterpointContext } from "./Context";
 import { Score } from "./Score";
 import { MeasureCursor, NonHarmonicType, Note } from "./Voice";
+import { H, PC } from "./Internal";
 
 export type NoteSchema = {
     harmonic: boolean,
@@ -22,7 +23,7 @@ export type MeasureSchema = {
 
 export class SpeciesMeasure extends CounterpointMeasure {
     get schemaName() {
-        return this.schema.name;
+        return this.name;
     }
 
     get writable() {
@@ -32,12 +33,12 @@ export class SpeciesMeasure extends CounterpointMeasure {
     constructor(
         ctx: CounterpointContext,
         mc: MelodicContext,
-        private schema: MeasureSchema,
-        notes?: Note[],
+        readonly name: string,
+        readonly noteSchema: NoteSchema[],
+        notes: Note[] = [],
     ) {
-        if (!notes) {
-            notes = [];
-            for (const n of schema.notes(ctx))
+        if (notes.length < noteSchema.length) {
+            for (const n of noteSchema.slice(notes.length))
                 notes.push(new Note(n.duration));
         }
         super(notes, ctx, mc);
@@ -47,20 +48,19 @@ export class SpeciesMeasure extends CounterpointMeasure {
         const e = [...this.elements];
         e.splice(i, 1, n);
         return new SpeciesMeasure(this.ctx,
-            this.ctx.updateMelodicContext(this.melodicContext, n.pitch), this.schema, e);
+            this.ctx.updateMelodicContext(this.melodicContext, n.pitch),
+            this.name, this.noteSchema, e);
     }
 
     getNextSteps(s: Score, c: CounterpointMeasureCursor): Step[] {
-        const notes = this.schema.notes(this.ctx);
-
         // @ts-expect-error
         const ci: CounterpointNoteCursor = this.find(
             (x) => x.value.pitch === null
-                && ('harmonic' in notes[x.index])
+                && ('harmonic' in this.noteSchema[x.index])
         // @ts-expect-error
         )!.withParent(c);
 
-        const schema = notes[ci.index];
+        const schema = this.noteSchema[ci.index];
         Debug.assert('harmonic' in schema);
         const next: Step[] = [];
         if (schema.harmonic)
@@ -73,7 +73,42 @@ export class SpeciesMeasure extends CounterpointMeasure {
     }
 
     hash(): string {
-        return `${this.schema.name}=${this.hashNotes()}`;
+        return `${this.name}=${this.hashNotes()}`;
+    }
+}
+
+class FakeMeasure extends CounterpointMeasure {
+    get writable() {
+        return true;
+    };
+
+    static counter = 0;
+
+    readonly counter: number;
+
+    constructor(
+        ctx: CounterpointContext,
+        mc: MelodicContext,
+        private schemas: (readonly [MeasureSchema, NoteSchema[]])[],
+        private p0: H.Pitch,
+    ) {
+        super([new Note(ctx.parameters.measureLength)], ctx, mc);
+        this.counter = FakeMeasure.counter;
+        FakeMeasure.counter++;
+    }
+
+    hash(): string {
+        return `fake${this.counter}:${this.p0.hash}`;
+    }
+
+    getNextSteps(s: Score, c: CounterpointMeasureCursor): Step[] {
+        const mc = this.melodicContext;
+        return this.schemas.map(([s, n]) => ({
+            measure: new SpeciesMeasure(this.ctx, mc, s.name, n,
+                [new Note(n[0].duration, this.p0)]),
+            advanced: Rational.from(1),
+            cost: s.cost ?? 0
+        }));
     }
 }
 
@@ -98,11 +133,46 @@ export function defineSpecies(m: MelodicSettings, schema: MeasureSchema[]): Voic
         makeNewMeasure = (score: Score, c: CounterpointMeasureCursor) => {
             const mc = c.prevGlobal()?.value.melodicContext ?? emptyMelodicContext();
             const cur = c as unknown as MeasureCursor<SpeciesMeasure>;
-            return schema.flatMap((s) => {
-                if (!s.condition || s.condition(cur, score))
-                    return { measure: new SpeciesMeasure(this.ctx, mc, s), cost: s.cost ?? 0 };
-                return [];
-            });
+
+            const availableSchemas = schema
+                .filter((s) => !s.condition || s.condition(cur, score))
+                .map((s) => [s, s.notes(this.ctx)] as const);
+
+            const firstIsHarmonic = availableSchemas
+                .filter(([_, n]) => 'harmonic' in n[0] && n[0].harmonic);
+
+            const firstIsNotHarmonic = availableSchemas
+                .filter(([_, n]) => !('harmonic' in n[0]) || !n[0].harmonic);
+
+            const results: {
+                measure: CounterpointMeasure,
+                cost: number
+            }[] = [];
+
+            if (firstIsHarmonic.length > 0) {
+                // find a harmonic tone
+                const fake = new FakeMeasure(this.ctx, mc, firstIsHarmonic, PC.c);
+                const voice = c.container;
+                const newVoice = voice.replaceMeasure(c.index, fake);
+                const newScore = score.replaceVoice(voice.index, newVoice);
+                const fakeCursor = newVoice.at(c.index)!;
+                const candidates = [...this.ctx.getCandidates(
+                    this.ctx.harmonicToneRules, newScore,
+                    fake.atWithParent(0, fakeCursor)).entries()];
+
+                results.push(...candidates
+                    .map(([p, cost]) => ({
+                        measure: new FakeMeasure(this.ctx, mc, firstIsHarmonic, p),
+                        cost: cost
+                    })));
+            }
+
+            results.push(...firstIsNotHarmonic.map(([s, n]) => ({
+                measure: new SpeciesMeasure(this.ctx, mc, s.name, n),
+                cost: (s.cost ?? 0)
+            })));
+
+            return results;
         };
     }
 }

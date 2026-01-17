@@ -3,7 +3,7 @@ import { H } from "../Internal";
 import { CandidateRule, LocalRule } from "../Context";
 
 /**
- * Only allow melodic intervals specified in CounterpointContext in the melody.
+ * Forbid voice crossing, and optionally (if `allowUnison` is set in the context) also forbid unison.
  */
 export const forbidVoiceOverlapping2: CandidateRule = (ctx, s, cur, c, type) =>
 {
@@ -41,8 +41,8 @@ export const forbidVoiceOverlapping2: CandidateRule = (ctx, s, cur, c, type) =>
 
     return c.filter((p) => {
         const ord = p.ord().value();
-        if (upper !== undefined && ord > upper) return false;
-        if (lower !== undefined && ord < lower) return false;
+        if (upper !== undefined && (ord > upper || (ctx.allowUnison && ord == upper))) return false;
+        if (lower !== undefined && (ord < lower || (ctx.allowUnison && ord == lower))) return false;
         return true;
     })
 }

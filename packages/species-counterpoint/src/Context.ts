@@ -90,7 +90,7 @@ export class CounterpointContext {
         };
     }
 
-    private getCandidates(
+    getCandidates(
         rules: CandidateRule[], s: Score, current: CounterpointNoteCursor,
         type?: NonHarmonicType
     ) {

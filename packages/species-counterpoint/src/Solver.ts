@@ -31,6 +31,7 @@ export interface INode extends Hashable {
     readonly score: Score;
     readonly measureIndex: number,
     readonly voiceIndex?: number,
+    readonly type: 'initial' | 'harmony' | 'note';
     readonly nStep: number,
     readonly cost: number,
     readonly thisCost: number,
@@ -80,6 +81,7 @@ class Node implements INode {
         private ctx: CounterpointContext,
         readonly measureIndex: number,
         readonly voiceIndex: number | undefined,
+        readonly type: 'note' | 'harmony' | 'initial',
         readonly nStep: number,
         readonly cost: number,
         readonly thisCost: number,
@@ -111,12 +113,12 @@ class Node implements INode {
                 const newScore = this.score.replaceHarmony(newHarmony);
 
                 return new Node(newScore, this.ctx,
-                    this.measureIndex, -1, this.nStep,
-                    this.cost * POWER + cost, cost);
+                    this.measureIndex, -1, 'harmony',
+                    this.nStep, this.cost * POWER + cost, cost);
             });
         }
 
-        return this.#target.measures.reverse().flatMap((x) => {
+        return this.#target.measures.flatMap((x) => {
             const voice = x.container;
             const nexts = x.value.getNextSteps(this.score, x);
 
@@ -128,7 +130,8 @@ class Node implements INode {
                     return [];
                 else {
                     return new Node(newScore, this.ctx,
-                        this.measureIndex, voice.index, this.nStep + advanced.value(),
+                        this.measureIndex, voice.index, 'note',
+                        this.nStep + advanced.value(),
                         this.cost * Math.pow(POWER, advanced.value()) + cost, cost);
                 }
             });
@@ -148,11 +151,10 @@ export class CounterpointSolver {
     reportInterval = 1000;
     onProgress?: (p: CounterpointSolverProgress) => void;
 
-    #open?: PriorityQueue<Node>;
-    #parents?: HashMap<Node, Node>;
+    #parents?: HashMap<Node, Node | undefined>;
     #start?: Node;
 
-    get parents(): HashMap<INode, INode> | undefined {
+    get parents(): HashMap<INode, INode | undefined> | undefined {
         return this.#parents;
     }
 
@@ -161,6 +163,13 @@ export class CounterpointSolver {
     }
 
     constructor(private ctx: CounterpointContext) {}
+
+    bfs(s: Score) {
+        const open: Node[] = [];
+        this.#parents = new HashMap<Node, Node>();
+        this.#start = new Node(s, this.ctx, 0, -1, 'initial', 0, 0, 0);
+        open.push(this.#start);
+    }
 
     aStar(s: Score, strategy: CounterpointSolverRewardStrategy) {
         let cmp: (a: Node, b: Node) => number;
@@ -174,11 +183,11 @@ export class CounterpointSolver {
                 Debug.never(strategy.type);
         }
 
-        this.#open = new PriorityQueue<Node>([], cmp);
-        this.#parents = new HashMap<Node, Node>();
-
-        this.#start = new Node(s, this.ctx, 0, -1, 0, 0, 0);
-        this.#open.push(this.#start);
+        const open = new PriorityQueue<Node>([], cmp);
+        this.#parents = new HashMap<Node, Node | undefined>();
+        this.#start = new Node(s, this.ctx, 0, -1, 'initial', 0, 0, 0);
+        open.push(this.#start);
+        this.#parents.set(this.#start, undefined);
 
         let progress = 0;
         let furthest = 0;
@@ -187,11 +196,13 @@ export class CounterpointSolver {
         let nNode = 0;
         let nSkipped = 0;
 
-        while (this.#open.length > 0) {
+        while (open.length > 0) {
             const newNodes: Node[] = [];
             for (let i = 0; i < this.batch; i++) {
-                const current = this.#open.pop();
+                const current = open.pop();
                 if (!current) break;
+
+                Debug.assert(this.#parents.has(current));
 
                 if (current.isGoal) {
                     const avgNeighbor = nNeighbor / nNode;
@@ -236,7 +247,7 @@ export class CounterpointSolver {
                 if (this.limitSteps > 0 && nNode > this.limitSteps)
                     return null;
             }
-            newNodes.forEach((x) => this.#open!.push(x));
+            newNodes.forEach((x) => open!.push(x));
         }
 
         return null; // No path found

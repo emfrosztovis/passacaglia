@@ -5,7 +5,7 @@ import { Clef, toMxl } from 'musicxml';
 import Graph, { DirectedGraph } from 'graphology';
 
 const ctx = new CounterpointContext(
-    9, // targetMeasures
+    3, // targetMeasures
     {
         measureLength: new Rational(4)
     }
@@ -21,17 +21,17 @@ ctx.localRules = [
     Rules.forbidPerfectsBySimilarMotion,
     Rules.forbidNearbyPerfects,
     Rules.prioritizeVoiceMotion,
-    // Rules.enforceVerticalConsonanceWithMovingLocal,
+    Rules.enforceVerticalConsonanceWithMovingLocal,
 ];
 
 ctx.candidateRulesBefore = [
     Rules.enforceScaleTones,
     Rules.enforceDirectionalDegreeMatrix(Rules.DegreeMatrixPreset.major),
     // Rules.enforceMinor(StandardHeptatonic.PitchClasses.c),
-    // Rules.enforceStepwiseAroundShortNotes,
+    Rules.enforceStepwiseAroundShortNotes,
     Rules.enforcePassingTones,
     Rules.enforceNeighborTones,
-    // Rules.enforceSuspension,
+    Rules.enforceSuspension,
     Rules.forbidVoiceOverlapping2,
 ];
 
@@ -47,18 +47,18 @@ ctx.harmonicToneRules = [
 ];
 
 ctx.nonHarmonicToneRules = {
-    // 'neighbor': [
-    //     Rules.makeNeighborTone,
-    // ],
+    'neighbor': [
+        Rules.makeNeighborTone,
+    ],
     'passing_tone': [
         Rules.makePassingTone,
     ],
-    // 'suspension': [
-    //     Rules.makeSuspension
-    // ],
+    'suspension': [
+        Rules.makeSuspension
+    ],
 };
 
-// ctx.allowUnison = true;
+ctx.allowUnison = false;
 
 const score = new CounterpointScoreBuilder(ctx)
     // .cantus(Clef.Treble, [
@@ -75,10 +75,10 @@ const score = new CounterpointScoreBuilder(ctx)
     //     parseNotes(['b4', ctx.parameters.measureLength]),
     //     parseNotes(['c5', ctx.parameters.measureLength]),
     // ])
-    .soprano(Species2)
-    // .alto(Species2)
-    // .tenor(Species2)
-    // .tenor(Species1)
+    .soprano(Species5)
+    .alto(Species5)
+    // .tenor(Species5)
+    // .bass(Species1)
     .cantus(Clef.Bass, [
         parseNotes(['c3', ctx.parameters.measureLength]),
         parseNotes(['d3', ctx.parameters.measureLength]),
@@ -133,14 +133,14 @@ solver.onProgress = (p) => {
     } satisfies MainMessage);
 }
 
-solver.limitSteps = 2000;
-solver.removeOld = 10;
-solver.batch = 1;
+solver.limitSteps = 5000;
+solver.removeOld = 100;
+solver.batch = 3;
 solver.reportInterval = 1000;
 
 const result = solver.aStar(score, {
     type: 'constant',
-    value: 100,
+    value: 500,
 });
 // const result = solver.beamSearch(score, 200);
 
@@ -150,21 +150,28 @@ const nodes = new Map<string, INode>();
 
 if (result) {
     const graph = new DirectedGraph();
-    graph.addNode(solver.startNode?.id, { x: -10, y: -10, color: 'green', size: 4, });
-    nodes.set(`${solver.startNode!.id}`, solver.startNode!);
+    // graph.addNode(solver.startNode?.id, { x: 0, y: 0, color: 'green', size: 4, });
+    // nodes.set(`${solver.startNode!.id}`, solver.startNode!);
     for (const [n, p] of solver.parents!.entries()) {
         graph.addNode(n.id, {
+            // x: n.nStep * 20, y: Math.random(),
             color: n.isGoal ? 'blue'
-                 : n.nExpanded == 0 ? 'red'
-                 : n.nExpanded !== undefined ? 'black'
-                 : 'gray',
-            size: n.isGoal ? 4 : 2,
-            label: `#${n.id}=${n.measureIndex}/${n.voiceIndex};${n.thisCost.toFixed(1)}`
+                : n.nExpanded == 0 ? 'red'
+                : n.nExpanded !== undefined ? 'black'
+                : 'gray',
+            size: n.isGoal ? 3 : 2,
+            label: `${n.measureIndex}/${n.voiceIndex};${n.thisCost.toFixed(1)}`,
+            // type: n.type == 'harmony' ? 'square' : 'circle',
         });
         nodes.set(`${n.id}`, n);
 
-        graph.addEdge(p.id, n.id, { size: p.thisCost / 100, type: 'arrow' });
-        graph.setNodeAttribute(p.id, 'size', graph.getNodeAttribute(p.id, 'size') + 0.2);
+        if (!p) continue;
+        graph.addEdge(p.id, n.id, {
+            size: n.thisCost / 100 * 0 + 0.2, type: 'line',
+            color: n.isGoal ? 'blue'
+                : n.nExpanded == 0 ? 'red'
+                : 'lightgray',
+        });
     }
 
     postMessage({
