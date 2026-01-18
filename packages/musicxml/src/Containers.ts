@@ -62,9 +62,9 @@ export function measure(
     };
 }
 
-export function part(s: ScoreLike, v: VoiceLike) {
+export function part(s: ScoreLike, v: VoiceLike, voiceId: string) {
     return {
-        '@id': v.name,
+        '@id': voiceId,
         measure: [...v.entries()].map((x) => measure(x, v, s))
     };
 }
@@ -76,12 +76,12 @@ export function score(s: ScoreLike): string {
         'score-partwise': {
             '@version': '4.0',
             'part-list': {
-                'score-part': s.voices.map((x) => ({
-                    '@id': x.name,
+                'score-part': s.voices.map((x, i) => ({
+                    '@id': i.toString(),
                     'part-name': x.name
                 })),
             },
-            part: s.voices.map((x) => part(s, x))
+            part: s.voices.map((x, i) => part(s, x, i.toString()))
         }
     }).end({ prettyPrint: true });
 }

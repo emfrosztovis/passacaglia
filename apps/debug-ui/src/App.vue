@@ -33,15 +33,6 @@ worker.onmessage = (ev: MessageEvent<MainMessage>) => {
             result = ev.data.data.map(VoiceData.deserialize);
             source.value = ev.data.source;
             blob.value = URL.createObjectURL(new Blob([source.value]));
-            graph.value = DirectedGraph.from(ev.data.graph as any);
-            // reingoldTilford(graph.value);
-            // forceAtlas2.assign(graph.value, {
-            //     iterations: 50,
-            //     settings: {
-            //         edgeWeightInfluence: 0,
-            //         gravity: 0.5
-            //     }
-            // });
             break;
         case 'no-solution':
             console.log('no solution');
@@ -54,6 +45,9 @@ worker.onmessage = (ev: MessageEvent<MainMessage>) => {
             break;
         case 'query-score-result':
             source.value = ev.data.source;
+            break;
+        case 'graph':
+            graph.value = DirectedGraph.from(ev.data.graph as any);
             break;
         default:
             Debug.never(ev.data);
@@ -87,7 +81,7 @@ function filterNode(n: string) {
     </NProgress>
 
     <div class="container">
-        <button v-if="result" @click="play(result, [74, 74, 20, 53], { tempo: 180, synth: true })">
+        <button v-if="result" @click="play(result, [74, 74, 74, 20, 53], { tempo: 180, synth: true })">
             play
         </button>
         <!-- <a v-if="blob" :href="blob" download="result.mxl">download</a> -->

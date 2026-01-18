@@ -71,16 +71,6 @@ class Node implements INode {
                     earliest = m;
                 }
             })
-            // for (let i = 0; i < this.score.voices.length; i++) {
-            //     const v = this.score.voices[i];
-            //     if (!(v instanceof CounterpointVoice)) continue;
-            //     const m = v.at(this.measureIndex);
-            //     if (!m || !m.value.writablePosition) continue;
-            //     if (m.value.writablePosition.value() <= time) {
-            //         time = m.value.writablePosition.value();
-            //         earliest = m;
-            //     }
-            // }
             if (earliest) {
                 this.#target = { measure: earliest };
             }
@@ -153,7 +143,7 @@ class Node implements INode {
     }
 
     hash(): string {
-        return this.#hash;
+        return this.id.toString(); //this.#hash;
     }
 }
 
@@ -249,7 +239,8 @@ export class CounterpointSolver {
 
                 const neighbors = current
                     .getNeighbors()
-                    .filter((x) => !this.#parents?.has(x));
+                    .filter((x) => !this.#parents?.has(x))
+                ;
                 newNodes.push(...neighbors);
                 neighbors.forEach((x) => this.#parents?.set(x, current));
                 current.nExpanded = neighbors.length;

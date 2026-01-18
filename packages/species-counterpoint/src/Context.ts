@@ -131,7 +131,7 @@ export class CounterpointContext {
         return this.fillIn(this.harmonicToneRules, s, note, undefined, create, costOffset);
     }
 
-    private fillIn(
+    fillIn(
         rules: CandidateRule[],
         s: Score, note: CounterpointNoteCursor,
         type: NonHarmonicType | undefined,

@@ -1,4 +1,4 @@
-export * from './LocalRules';
+export * from './Motion';
 export * from './Melody';
 export * from './Scales';
 export * from './Harmony';

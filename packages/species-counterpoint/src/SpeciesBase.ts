@@ -111,11 +111,15 @@ class FakeMeasure extends CounterpointMeasure {
     }
 }
 
-export function defineSpecies(m: MelodicSettings, schema: MeasureSchema[]): VoiceConstructor {
+export function defineSpecies(
+    m: MelodicSettings, schema: MeasureSchema[]
+): VoiceConstructor & { readonly melodySettings: MelodicSettings } {
     return class Species extends CounterpointVoice {
         get melodySettings() {
             return m;
         }
+
+        static melodySettings = m;
 
         clone() {
             return new Species(this.index, this.ctx, [...this.elements],

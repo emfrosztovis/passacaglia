@@ -6,7 +6,6 @@ import { Score } from "./Score";
 const first = (c: MeasureCursor<SpeciesMeasure>) => c.index == 0;
 const later = (c: MeasureCursor<SpeciesMeasure>) => c.index > 0;
 
-
 const hdiff = (c: MeasureCursor<SpeciesMeasure>, name: string) =>
     c.prevGlobal()?.value.schemaName !== name;
 

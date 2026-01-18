@@ -119,7 +119,7 @@ export const enforceLeapPreparationBefore: CandidateRule = (ctx, _s, cur, c, att
 /**
  * Make sure leaps greater than a thrid are prepared by stepwise opposite movement after them.
  */
-export const enforceLeapPreparationAfter: CandidateRule = (ctx, _s, cur, c, attr) =>
+export const enforceLeapPreparationAfter: CandidateRule = (_ctx, _s, cur, c) =>
 {
     Debug.assert(c !== null);
 
@@ -139,6 +139,28 @@ export const enforceLeapPreparationAfter: CandidateRule = (ctx, _s, cur, c, attr
         return int.steps >= 3 || (int.steps == 1 && int.sign == -int0.sign);
     });
 };
+
+export const avoidRepeat2: CandidateRule = (ctx, _s, cur, c, attr) =>
+{
+    Debug.assert(c !== null);
+
+    const p1 = cur.prevGlobal();
+    const prev = p1?.value.pitch;
+    if (!prev) return c;
+
+    const p2 = p1!.prevGlobal();
+    const prev2 = p2?.value.pitch;
+    if (!prev2) return c;
+
+    const p3 = p2!.prevGlobal();
+    const prev3 = p3?.value.pitch;
+    if (!prev3) return c;
+
+    if (prev3.equals(prev) && p3.duration.equals(p1.duration)) {
+        return c.filter((x) => !x.equals(prev2));
+    }
+    return c;
+}
 
 /**
  * Limit consecutive leaps according to the voice's melodic settings.

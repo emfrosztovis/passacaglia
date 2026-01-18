@@ -43,5 +43,5 @@ export const makeSuspension: CandidateRule = (_ctx, _s, cur, c) => {
       || prev.duration.value() < cur.duration.value()
     ) return new HashMap();
 
-    return c.filter((p) => p.equals(prev.pitch!));
+    return c.filterMap((p) => p.equals(prev.pitch!) ? 0 : undefined);
 }
