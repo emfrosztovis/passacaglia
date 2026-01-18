@@ -56,7 +56,7 @@ export abstract class CounterpointMeasure extends Measure {
 }
 
 export class BlankMeasure extends CounterpointMeasure {
-    readonly writable = true;
+    readonly writablePosition = Rational.from(0);
 
     constructor(ctx: CounterpointContext) {
         super([new Note(ctx.parameters.measureLength, undefined)], ctx, emptyMelodicContext());
@@ -72,7 +72,7 @@ export class BlankMeasure extends CounterpointMeasure {
 }
 
 export class FixedMeasure extends Measure {
-    readonly writable = false;
+    readonly writablePosition = null;
 
     constructor(
         notes: Note[],

@@ -9,7 +9,6 @@ import { Debug } from 'common';
 import { NProgress } from 'naive-ui';
 
 import Graph, { DirectedGraph } from 'graphology';
-import { reingoldTilford } from './ReingoldTilford';
 import type { Sigma } from 'sigma';
 import SigmaView from './components/SigmaView.vue';
 
@@ -35,7 +34,7 @@ worker.onmessage = (ev: MessageEvent<MainMessage>) => {
             source.value = ev.data.source;
             blob.value = URL.createObjectURL(new Blob([source.value]));
             graph.value = DirectedGraph.from(ev.data.graph as any);
-            reingoldTilford(graph.value);
+            // reingoldTilford(graph.value);
             // forceAtlas2.assign(graph.value, {
             //     iterations: 50,
             //     settings: {

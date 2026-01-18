@@ -1,7 +1,7 @@
 import { PriorityQueue } from "@js-sdsl/priority-queue";
 import { Score } from "./Score";
 import { CounterpointContext } from "./Context";
-import { Debug, Hashable, HashMap, shuffle } from "common";
+import { Debug, Hashable, HashMap, Rational, shuffle } from "common";
 import { CounterpointMeasureCursor, CounterpointVoice } from "./Basic";
 import { ChordCursor } from "./Chord";
 
@@ -51,7 +51,7 @@ class Node implements INode {
     #target: {
         chord: ChordCursor
     } | {
-        measures: CounterpointMeasureCursor[]
+        measure: CounterpointMeasureCursor
     } | undefined;
 
     #findWritable() {
@@ -60,16 +60,30 @@ class Node implements INode {
         if (!ch.value.chord && this.ctx.harmonyRules.length > 0)
             this.#target = { chord: ch };
         else {
-            const measures: CounterpointMeasureCursor[] = [];
-            for (let i = 0; i < this.score.voices.length; i++) {
-                const v = this.score.voices[i];
-                if (!(v instanceof CounterpointVoice)) continue;
+            let earliest: CounterpointMeasureCursor | undefined;
+            let time = Infinity;
+            [...this.score.voices].forEach((v) => {
+                if (!(v instanceof CounterpointVoice)) return;
                 const m = v.at(this.measureIndex);
-                if (!m || !m.value.writable) continue;
-                measures.push(m);
+                if (!m || !m.value.writablePosition) return;
+                if (m.value.writablePosition.value() < time) {
+                    time = m.value.writablePosition.value();
+                    earliest = m;
+                }
+            })
+            // for (let i = 0; i < this.score.voices.length; i++) {
+            //     const v = this.score.voices[i];
+            //     if (!(v instanceof CounterpointVoice)) continue;
+            //     const m = v.at(this.measureIndex);
+            //     if (!m || !m.value.writablePosition) continue;
+            //     if (m.value.writablePosition.value() <= time) {
+            //         time = m.value.writablePosition.value();
+            //         earliest = m;
+            //     }
+            // }
+            if (earliest) {
+                this.#target = { measure: earliest };
             }
-            if (measures.length > 0)
-                this.#target = { measures };
         }
     }
 
@@ -118,25 +132,24 @@ class Node implements INode {
             });
         }
 
-        return this.#target.measures.flatMap((x) => {
-            const voice = x.container;
-            const nexts = x.value.getNextSteps(this.score, x);
+        const m = this.#target.measure;
+        const voice = m.container;
+        const nexts = m.value.getNextSteps(this.score, m);
 
-            const result = nexts.flatMap(({ measure, advanced, cost }) => {
-                const newVoice = voice.replaceMeasure(x.index, measure);
-                const newScore = this.score.replaceVoice(voice.index, newVoice);
+        const result = nexts.flatMap(({ measure, advanced, cost }) => {
+            const newVoice = voice.replaceMeasure(m.index, measure);
+            const newScore = this.score.replaceVoice(voice.index, newVoice);
 
-                if (this.ctx.globalRules.find((x) => x(this.ctx, newScore) !== null))
-                    return [];
-                else {
-                    return new Node(newScore, this.ctx,
-                        this.measureIndex, voice.index, 'note',
-                        this.nStep + advanced.value(),
-                        this.cost * Math.pow(POWER, advanced.value()) + cost, cost);
-                }
-            });
-            return result;
+            if (this.ctx.globalRules.find((x) => x(this.ctx, newScore) !== null))
+                return [];
+            else {
+                return new Node(newScore, this.ctx,
+                    this.measureIndex, voice.index, 'note',
+                    this.nStep + advanced.value(),
+                    this.cost * Math.pow(POWER, advanced.value()) + cost, cost);
+            }
         });
+        return result;
     }
 
     hash(): string {

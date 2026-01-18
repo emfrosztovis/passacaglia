@@ -26,9 +26,7 @@ export class SpeciesMeasure extends CounterpointMeasure {
         return this.name;
     }
 
-    get writable() {
-        return !this.elements.at(-1)?.pitch;
-    };
+    readonly writablePosition: Rational | null;
 
     constructor(
         ctx: CounterpointContext,
@@ -42,6 +40,9 @@ export class SpeciesMeasure extends CounterpointMeasure {
                 notes.push(new Note(n.duration));
         }
         super(notes, ctx, mc);
+
+        this.writablePosition = this.find(
+            (x) => !x.value.pitch && !('skip' in noteSchema[x.index]))?.time ?? null;
     }
 
     #replace(i: number, n: Note) {
@@ -63,11 +64,11 @@ export class SpeciesMeasure extends CounterpointMeasure {
         const schema = this.noteSchema[ci.index];
         Debug.assert('harmonic' in schema);
         const next: Step[] = [];
-        if (schema.harmonic)
-            next.push(...this.ctx.fillHarmonicTone(
-                s, ci, (n) => this.#replace(ci.index, n)));
         if (schema.types)
             next.push(...this.ctx.fillNonHarmonicTone(schema.types,
+                s, ci, (n) => this.#replace(ci.index, n)));
+        if (schema.harmonic)
+            next.push(...this.ctx.fillHarmonicTone(
                 s, ci, (n) => this.#replace(ci.index, n)));
         return next;
     }
@@ -78,9 +79,7 @@ export class SpeciesMeasure extends CounterpointMeasure {
 }
 
 class FakeMeasure extends CounterpointMeasure {
-    get writable() {
-        return true;
-    };
+    readonly writablePosition = Rational.from(0);
 
     static counter = 0;
 
@@ -149,6 +148,11 @@ export function defineSpecies(m: MelodicSettings, schema: MeasureSchema[]): Voic
                 cost: number
             }[] = [];
 
+            results.push(...firstIsNotHarmonic.map(([s, n]) => ({
+                measure: new SpeciesMeasure(this.ctx, mc, s.name, n),
+                cost: (s.cost ?? 0)
+            })));
+
             if (firstIsHarmonic.length > 0) {
                 // find a harmonic tone
                 const fake = new FakeMeasure(this.ctx, mc, firstIsHarmonic, PC.c);
@@ -166,11 +170,6 @@ export function defineSpecies(m: MelodicSettings, schema: MeasureSchema[]): Voic
                         cost: cost
                     })));
             }
-
-            results.push(...firstIsNotHarmonic.map(([s, n]) => ({
-                measure: new SpeciesMeasure(this.ctx, mc, s.name, n),
-                cost: (s.cost ?? 0)
-            })));
 
             return results;
         };

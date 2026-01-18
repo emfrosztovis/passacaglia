@@ -2,6 +2,8 @@
 
 > Dedicated to Nikolai Y. Myaskovsky
 
+![poster](public/image.png)
+
 A suite of libraries about music theory and procedural music generation, in early-stage development.
 
 - [`common`](./packages/common/) contains shared utility classes, types and functions that are not related to music. Most importantly, it provides `Rational` and `HashMap` which are used everywhere.

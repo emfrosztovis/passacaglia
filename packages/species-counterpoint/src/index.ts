@@ -5,3 +5,4 @@ export * from './Context';
 export * from './Species';
 export * from './Play';
 export * from './Solver';
+export * from './Chord';

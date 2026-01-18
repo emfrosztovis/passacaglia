@@ -76,7 +76,7 @@ export abstract class Measure
         super(notes);
     }
 
-    abstract readonly writable: boolean;
+    abstract readonly writablePosition: Rational | null;
     abstract hash(): string;
 
     protected hashNotes(): string {
@@ -89,7 +89,7 @@ export abstract class Measure
 }
 
 export class MeasureData extends Measure implements Serializable {
-    readonly writable = false;
+    readonly writablePosition = null;
 
     hash(): string {
         return this.hashNotes();
