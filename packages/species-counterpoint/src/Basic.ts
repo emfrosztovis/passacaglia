@@ -63,8 +63,9 @@ export class BlankMeasure extends CounterpointMeasure {
         super([new Note(ctx.parameters.measureLength, undefined)], ctx, emptyMelodicContext());
     }
 
-    getNextSteps(s: Score, c: CounterpointMeasureCursor) {
-        return c.container.makeNewMeasure(s, c).map((x) => ({ ...x, advanced: new Rational(0) } ));
+    getNextSteps(s: Score, c: CounterpointMeasureCursor): Step[] {
+        return c.container.makeNewMeasure(s, c)
+            .map((x) => ({ ...x, advanced: new Rational(0), debug: 'from_blank' } ));
     }
 
     hash(): string {
@@ -184,11 +185,11 @@ export class CounterpointScoreBuilder {
     }
 
     alto(v: VoiceConstructor) {
-        return this.voice(v, Clef.Alto, 'Alto', H.Pitch.parse('f3')!, H.Pitch.parse('d5')!);
+        return this.voice(v, Clef.Treble, 'Alto', H.Pitch.parse('f3')!, H.Pitch.parse('d5')!);
     }
 
     tenor(v: VoiceConstructor) {
-        return this.voice(v, Clef.Treble8vb, 'Tenor', H.Pitch.parse('c3')!, H.Pitch.parse('a4')!);
+        return this.voice(v, Clef.Alto, 'Tenor', H.Pitch.parse('c3')!, H.Pitch.parse('a4')!);
     }
 
     bass(v: VoiceConstructor) {

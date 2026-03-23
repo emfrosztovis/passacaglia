@@ -1,5 +1,5 @@
 import { Debug } from "common";
-import { NonHarmonicType, Note } from "./Voice";
+import { NonHarmonicType, Note, NoteCursor } from "./Voice";
 import { CounterpointMeasure, CounterpointNoteCursor, MelodicContext, Step } from "./Basic";
 import { HashMap } from "common";
 import { parsePreferred } from "./rules/Scales";
@@ -10,7 +10,7 @@ import { Chord, ChordCursor } from "./Chord";
 const DEBUG = true;
 
 export type LocalRule = (
-    ctx: CounterpointContext, s: Score, current: CounterpointNoteCursor
+    ctx: CounterpointContext, s: Score, current: NoteCursor
 ) => number;
 
 export type GlobalRule = (
@@ -48,7 +48,7 @@ export class CounterpointContext {
         ['P5',  90],              ['-P5',  90],
         ['m6',  90], ['M6',  90], ['-m6',  90], ['-M6',  90],
         ['P8', 120],              ['-P8', 120],
-        ['P1', 500],
+        ['P1',  50],
     );
 
     forbidWithBass = new HashMap([[H.Interval.parse('P4')!, undefined]]);
@@ -151,9 +151,9 @@ export class CounterpointContext {
 
             for (const rule of this.localRules) {
                 const c = rule(this, newScore, newCursor);
-                if (c === Infinity) return [];
+                // if (c === Infinity) return [];
                 cost += c;
-                if (DEBUG && c > 0) {
+                if (DEBUG && c !== 0) {
                     debug.push(`${rule.name}=${c}`);
                 }
             }

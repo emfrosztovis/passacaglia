@@ -63,7 +63,7 @@ class Node implements INode {
         else {
             let earliest: CounterpointMeasureCursor | undefined;
             let time = Infinity;
-            [...this.score.voices].forEach((v) => {
+            [...this.score.voices].reverse().forEach((v) => {
                 if (!(v instanceof CounterpointVoice)) return;
                 const m = v.at(this.measureIndex);
                 if (!m || !m.value.writablePosition) return;

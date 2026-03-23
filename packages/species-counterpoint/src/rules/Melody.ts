@@ -1,6 +1,7 @@
 import { Debug, HashMap } from "common";
 import { H } from "../Internal";
 import { CandidateRule, LocalRule } from "../Context";
+import { CounterpointMeasure, CounterpointVoice } from "../Basic";
 
 /**
  * Forbid voice crossing, and optionally (if `allowUnison` is set in the context) also forbid unison.
@@ -166,6 +167,8 @@ export const avoidRepeat2: CandidateRule = (ctx, _s, cur, c, attr) =>
  * Limit consecutive leaps according to the voice's melodic settings.
  */
 export const limitConsecutiveLeaps: LocalRule = (_ctx, _s, x1) => {
+    Debug.assert(x1.container instanceof CounterpointMeasure);
+    Debug.assert(x1.parent.container instanceof CounterpointVoice);
     const m = x1.container.melodicContext;
     const settings = x1.parent.container.melodySettings;
     if (!settings) return 0;

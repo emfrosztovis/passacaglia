@@ -77,7 +77,8 @@ export class ImitationMeasure extends CounterpointMeasure {
             return [{
                 measure: this.#fill(note),
                 advanced: note.duration,
-                cost: 0
+                cost: 0,
+                debug: 'imitate_blank',
             }];
         }
 

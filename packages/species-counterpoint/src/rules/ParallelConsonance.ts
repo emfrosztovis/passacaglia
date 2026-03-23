@@ -24,7 +24,7 @@ export const forbidPerfectsBySimilarMotion: LocalRule = (_ctx, s, x1) => {
 
         const sign1 = n0.value.pitch.distanceTo(n1.value.pitch).sign();
         if (sign0 == sign1) {
-            // if (sign0 == 0) continue; // skip if they're both repeated
+            if (sign0 == 0) continue; // skip if they're both repeated
             return Infinity;
         }
 
@@ -34,7 +34,6 @@ export const forbidPerfectsBySimilarMotion: LocalRule = (_ctx, s, x1) => {
     }
     return 0;
 };
-
 
 /**
  * Forbid perfect consonances that are near each other.
@@ -85,7 +84,7 @@ export const forbidNearbyPerfects: LocalRule = (ctx, s, x1) => {
             let px2: H.Pitch | null = null;
             for (
                 let x2 = x1.prevGlobal();
-                x2 && !!(px2 = x2.value.pitch) && t1.sub(x2.globalTime).value() < measureLen;
+                x2 && !!(px2 = x2.value.pitch) && t1.sub(x2.globalTime).value() <= measureLen;
                 x2 = x2?.prevGlobal()
             ) {
                 const y2 = voice.noteAt(x2.globalTime);

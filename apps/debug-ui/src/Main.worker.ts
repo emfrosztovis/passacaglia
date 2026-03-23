@@ -7,56 +7,79 @@ import { DirectedGraph } from 'graphology';
 import * as d3 from 'd3';
 
 const ctx = new CounterpointContext(
-    9, // targetMeasures
+    16, // targetMeasures
     {
         measureLength: new Rational(4)
     }
 );
 
 ctx.harmonyRules = [
-    Rules.enforceChordProgression([
-        [Chords.major.withRoot(StandardHeptatonic.PitchClasses.c)],
-        [
-            Chords.major.withRoot(StandardHeptatonic.PitchClasses.f),
-            Chords.major6.withRoot(StandardHeptatonic.PitchClasses.f),
-            Chords.minor.withRoot(StandardHeptatonic.PitchClasses.d),
-            Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.d),
-        ],
-        [
-            Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
-            Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
-            Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
-        ],
-        [
-            Chords.major.withRoot(StandardHeptatonic.PitchClasses.c),
-            Chords.major6.withRoot(StandardHeptatonic.PitchClasses.c),
-            Chords.minor.withRoot(StandardHeptatonic.PitchClasses.a),
-            Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.a),
-        ],
-        [
-            Chords.major.withRoot(StandardHeptatonic.PitchClasses.f),
-            Chords.major6.withRoot(StandardHeptatonic.PitchClasses.f),
-            Chords.minor.withRoot(StandardHeptatonic.PitchClasses.d),
-            Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.d),
-        ],
-        [
-            Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
-            Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
-            Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
-        ],
-        [Chords.major.withRoot(StandardHeptatonic.PitchClasses.c)],
-        [
-            Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
-            Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
-            Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
-        ],
-        [Chords.major.withRoot(StandardHeptatonic.PitchClasses.c)],
-    ]),
+    // Rules.enforceChordProgression([
+    //     [Chords.minor.withRoot(StandardHeptatonic.PitchClasses.c)],
+    //     [
+    //         Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
+    //         Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
+    //         Chords.dim.withRoot(StandardHeptatonic.PitchClasses.b),
+    //         Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
+    //     ],
+    //     [
+    //         Chords.minor.withRoot(StandardHeptatonic.PitchClasses.c),
+    //         Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.c),
+    //         Chords.minor.withRoot(StandardHeptatonic.PitchClasses.f),
+    //         Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.f),
+    //     ],
+    //     [
+    //         Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
+    //         Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
+    //         Chords.dim.withRoot(StandardHeptatonic.PitchClasses.b),
+    //         Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
+    //     ],
+    //     [
+    //         Chords.minor.withRoot(StandardHeptatonic.PitchClasses.c),
+    //         Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.c)
+    //     ],
+    //     // [Chords.major.withRoot(StandardHeptatonic.PitchClasses.c)],
+    //     // [
+    //     //     // Chords.major.withRoot(StandardHeptatonic.PitchClasses.f),
+    //     //     // Chords.major6.withRoot(StandardHeptatonic.PitchClasses.f),
+    //     //     Chords.minor.withRoot(StandardHeptatonic.PitchClasses.d),
+    //     //     Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.d),
+    //     // ],
+    //     // [
+    //     //     Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
+    //     //     Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
+    //     //     // Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
+    //     // ],
+    //     // [
+    //     //     Chords.major.withRoot(StandardHeptatonic.PitchClasses.c),
+    //     //     Chords.major6.withRoot(StandardHeptatonic.PitchClasses.c),
+    //     //     Chords.minor.withRoot(StandardHeptatonic.PitchClasses.a),
+    //     //     Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.a),
+    //     // ],
+    //     // [
+    //     //     Chords.major.withRoot(StandardHeptatonic.PitchClasses.f),
+    //     //     Chords.major6.withRoot(StandardHeptatonic.PitchClasses.f),
+    //     //     Chords.minor.withRoot(StandardHeptatonic.PitchClasses.d),
+    //     //     Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.d),
+    //     // ],
+    //     // [
+    //     //     Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
+    //     //     Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
+    //     //     // Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
+    //     // ],
+    //     // [Chords.major.withRoot(StandardHeptatonic.PitchClasses.c)],
+    //     // [
+    //     //     Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
+    //     //     Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
+    //     //     // Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
+    //     // ],
+    //     // [Chords.major.withRoot(StandardHeptatonic.PitchClasses.c)],
+    // ]),
     Rules.enforceValidChords,
 ];
 
 ctx.localRules = [
-    Rules.limitConsecutiveLeaps,
+    // Rules.limitConsecutiveLeaps,
     Rules.forbidPerfectsBySimilarMotion,
     Rules.forbidNearbyPerfects,
     Rules.prioritizeVoiceMotion,
@@ -65,15 +88,14 @@ ctx.localRules = [
 
 ctx.candidateRulesBefore = [
     Rules.enforceScaleTones,
-    Rules.enforceDirectionalDegreeMatrix(Rules.DegreeMatrixPreset.major),
+    // Rules.enforceDirectionalDegreeMatrix(Rules.DegreeMatrixPreset.major),
     // Rules.enforceMinor(StandardHeptatonic.PitchClasses.c),
-    // Rules.enforceVerticalConsonanceWithMoving,
     Rules.enforceStepwiseAroundShortNotes,
     Rules.enforcePassingTones,
     Rules.enforceNeighborTones,
     Rules.enforceSuspension,
     Rules.forbidVoiceOverlapping2,
-    Rules.avoidRepeat2,
+    // Rules.avoidRepeat2,
 ];
 
 ctx.candidateRulesAfter = [
@@ -124,11 +146,10 @@ const score = new CounterpointScoreBuilder(ctx)
     //     maxUnidirectionalConsecutiveLeaps: Infinity,
     //     maxUnidirectionalIgnorable3rdLeaps: Infinity
     // }, 1, 2, (p) => [p.add(StandardHeptatonic.Interval.parse('P5')!)]))
-    // .alto(Species5)
     .soprano(Species5)
-    .alto(Species5)
-    .tenor(Species5)
-    .bass(Species5)
+    .alto(Species1)
+    .tenor(Species1)
+    .bass(Species1)
     // .cantus(Clef.Bass, [
     //     parseNotes(['c3', ctx.parameters.measureLength]),
     //     parseNotes(['d3', ctx.parameters.measureLength]),
@@ -158,17 +179,12 @@ const score = new CounterpointScoreBuilder(ctx)
     //     parseNotes(['b2', ctx.parameters.measureLength]),
     //     parseNotes(['c3', ctx.parameters.measureLength]),
     // ])
-    // .build(StandardHeptatonic.Scales.C.completeMinor)
-    .build(
-        StandardHeptatonic.Scales.C.major,
-    )
+    // .build(StandardHeptatonic.Scales.completeMinor(StandardHeptatonic.PitchClasses.c))
+    .build(StandardHeptatonic.Scales.C.chromatic)
+    // .build(
+    //     StandardHeptatonic.Scales.C.major,
+    // )
 ;
-
-// score.harmony.elements[score.harmony.elements.length - 1]!.chord =
-//     Chords.major.withBass(StandardHeptatonic.PitchClasses.c);
-
-// score.harmony.elements[score.harmony.elements.length - 2]!.chord =
-//     Chords.major.withBass(StandardHeptatonic.PitchClasses.g);
 
 Debug.level = LogLevel.Trace;
 setLogger((level, message) => {
@@ -191,9 +207,9 @@ solver.onProgress = (p) => {
 }
 
 // solver.limitSteps = 500;
-solver.removeOld = 6;
-solver.batch = 20;
-solver.reportInterval = 1000;
+solver.removeOld = 4;
+solver.batch = 10;
+solver.reportInterval = 2000;
 
 const result = solver.aStar(score, {
     type: 'constant',

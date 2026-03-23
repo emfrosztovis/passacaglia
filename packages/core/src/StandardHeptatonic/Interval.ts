@@ -126,7 +126,7 @@ export class _Interval
         if (!match) return null;
         const quality = Abbr2Quality[match[2]];
         const number = Number.parseInt(match[3]);
-        if (isNaN(number)) return null;
+        if (isNaN(number) || number === 0) return null;
         const remainder = match[4] ? Rational.parse(match[4]) : new Rational(0);
         if (remainder === null) return null;
 

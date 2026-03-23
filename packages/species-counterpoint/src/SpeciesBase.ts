@@ -91,7 +91,8 @@ class FakeMeasure extends CounterpointMeasure {
         private schemas: (readonly [MeasureSchema, NoteSchema[]])[],
         private p0: H.Pitch,
     ) {
-        super([new Note(ctx.parameters.measureLength)], ctx, mc);
+        // TODO: it's not very correct to fill the whole measure with p0 (might make some rules fail unnecessarily), but in order to get this note checked at all we want to fill it here. Another possibility is to check it in `getNextSteps` but it's less efficient.
+        super([new Note(ctx.parameters.measureLength, p0)], ctx, mc);
         this.counter = FakeMeasure.counter;
         FakeMeasure.counter++;
     }
@@ -100,13 +101,14 @@ class FakeMeasure extends CounterpointMeasure {
         return `fake${this.counter}:${this.p0.hash}`;
     }
 
-    getNextSteps(s: Score, c: CounterpointMeasureCursor): Step[] {
+    getNextSteps(_s: Score, _c: CounterpointMeasureCursor): Step[] {
         const mc = this.melodicContext;
         return this.schemas.map(([s, n]) => ({
             measure: new SpeciesMeasure(this.ctx, mc, s.name, n,
                 [new Note(n[0].duration, this.p0)]),
             advanced: Rational.from(1),
-            cost: s.cost ?? 0
+            cost: s.cost ?? 0,
+            debug: 'from_fake'
         }));
     }
 }
@@ -159,20 +161,11 @@ export function defineSpecies(
 
             if (firstIsHarmonic.length > 0) {
                 // find a harmonic tone
-                const fake = new FakeMeasure(this.ctx, mc, firstIsHarmonic, PC.c);
                 const voice = c.container;
-                const newVoice = voice.replaceMeasure(c.index, fake);
-                const newScore = score.replaceVoice(voice.index, newVoice);
-                const fakeCursor = newVoice.at(c.index)!;
-                const candidates = [...this.ctx.getCandidates(
-                    this.ctx.harmonicToneRules, newScore,
-                    fake.atWithParent(0, fakeCursor)).entries()];
+                const fakeCursor = voice.noteAt(c.globalTime)! as CounterpointNoteCursor;
 
-                results.push(...candidates
-                    .map(([p, cost]) => ({
-                        measure: new FakeMeasure(this.ctx, mc, firstIsHarmonic, p),
-                        cost: cost
-                    })));
+                results.push(...this.ctx.fillHarmonicTone(score, fakeCursor,
+                    (_n, p) => new FakeMeasure(this.ctx, mc, firstIsHarmonic, p)));
             }
 
             return results;

@@ -31,6 +31,7 @@ test('parse fail', () => {
     expect(I.parse('m3+')).toBeNull();
     expect(I.parse('m3+1.5')).toBeNull();
     expect(I.parse('m8')).toBeNull();
+    expect(I.parse('P0')).toBeNull();
 });
 
 test('abbr', () => {

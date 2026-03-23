@@ -2,12 +2,11 @@ import { AsRational, Debug, Hashable, Rational, Serializable, Serialized } from 
 import { Cursor, DurationalElement, StandardHeptatonic as H, SequentialContainer, SequentialCursor } from 'core';
 import { Clef, NoteLike } from 'musicxml';
 
-export function parseNotes(...notes: [string, AsRational][]) {
+export function parseNotes(...notes: [string | null, AsRational][]) {
     const n: Note[] = [];
     for (const [p, len] of notes) {
-        const pitch = H.Pitch.parse(p);
+        const pitch = p ? H.Pitch.parse(p): null;
         const duration = Rational.from(len);
-        Debug.assert(pitch !== null);
         n.push(new Note(duration, pitch));
     }
     return n;
