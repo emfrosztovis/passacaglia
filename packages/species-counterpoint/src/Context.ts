@@ -7,6 +7,8 @@ import { H } from "./Internal";
 import { Score, Parameters } from "./Score";
 import { Chord, ChordCursor } from "./Chord";
 
+const DEBUG = true;
+
 export type LocalRule = (
     ctx: CounterpointContext, s: Score, current: CounterpointNoteCursor
 ) => number;
@@ -53,7 +55,7 @@ export class CounterpointContext {
         ['P1', 500],
     );
 
-    forbidWithBass = [H.Interval.parse('P4')!];
+    forbidWithBass = new HashMap([[H.Interval.parse('P4')!, undefined]]);
     allowUnison = false;
     stochastic = false;
 
@@ -149,12 +151,21 @@ export class CounterpointContext {
             const newCursor = newVoice.noteAt(note.globalTime) as CounterpointNoteCursor;
             Debug.assert(newCursor !== undefined);
 
+            let debug: string[] = [];
+
             for (const rule of this.localRules) {
                 const c = rule(this, newScore, newCursor);
                 if (c === Infinity) return [];
                 cost += c;
+                if (DEBUG && c > 0) {
+                    debug.push(`${rule.name}=${c}`);
+                }
             }
-            return { measure: m, cost: cost + costOffset, advanced: note.duration };
+            return {
+                measure: m, cost: cost + costOffset,
+                advanced: note.duration,
+                debug: debug.join('\n')
+            };
         });
     }
 

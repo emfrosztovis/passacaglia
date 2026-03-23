@@ -7,14 +7,52 @@ import { DirectedGraph } from 'graphology';
 import * as d3 from 'd3';
 
 const ctx = new CounterpointContext(
-    20, // targetMeasures
+    9, // targetMeasures
     {
         measureLength: new Rational(4)
     }
 );
 
 ctx.harmonyRules = [
-    Rules.enforceValidChords
+    Rules.enforceChordProgression([
+        [Chords.major.withRoot(StandardHeptatonic.PitchClasses.c)],
+        [
+            Chords.major.withRoot(StandardHeptatonic.PitchClasses.f),
+            Chords.major6.withRoot(StandardHeptatonic.PitchClasses.f),
+            Chords.minor.withRoot(StandardHeptatonic.PitchClasses.d),
+            Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.d),
+        ],
+        [
+            Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
+            Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
+            Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
+        ],
+        [
+            Chords.major.withRoot(StandardHeptatonic.PitchClasses.c),
+            Chords.major6.withRoot(StandardHeptatonic.PitchClasses.c),
+            Chords.minor.withRoot(StandardHeptatonic.PitchClasses.a),
+            Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.a),
+        ],
+        [
+            Chords.major.withRoot(StandardHeptatonic.PitchClasses.f),
+            Chords.major6.withRoot(StandardHeptatonic.PitchClasses.f),
+            Chords.minor.withRoot(StandardHeptatonic.PitchClasses.d),
+            Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.d),
+        ],
+        [
+            Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
+            Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
+            Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
+        ],
+        [Chords.major.withRoot(StandardHeptatonic.PitchClasses.c)],
+        [
+            Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
+            Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
+            Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
+        ],
+        [Chords.major.withRoot(StandardHeptatonic.PitchClasses.c)],
+    ]),
+    Rules.enforceValidChords,
 ];
 
 ctx.localRules = [
@@ -22,13 +60,14 @@ ctx.localRules = [
     Rules.forbidPerfectsBySimilarMotion,
     Rules.forbidNearbyPerfects,
     Rules.prioritizeVoiceMotion,
-    // Rules.enforceVerticalConsonanceWithMovingLocal,
+    Rules.enforceVerticalConsonanceWithMovingLocal,
 ];
 
 ctx.candidateRulesBefore = [
     Rules.enforceScaleTones,
     Rules.enforceDirectionalDegreeMatrix(Rules.DegreeMatrixPreset.major),
     // Rules.enforceMinor(StandardHeptatonic.PitchClasses.c),
+    // Rules.enforceVerticalConsonanceWithMoving,
     Rules.enforceStepwiseAroundShortNotes,
     Rules.enforcePassingTones,
     Rules.enforceNeighborTones,
@@ -59,7 +98,7 @@ ctx.nonHarmonicToneRules = {
     ],
 };
 
-// ctx.allowUnison = true;
+ctx.allowUnison = false;
 // ctx.similarMotionCost = 0;
 // ctx.obliqueMotionCost = 0;
 
@@ -86,12 +125,10 @@ const score = new CounterpointScoreBuilder(ctx)
     //     maxUnidirectionalIgnorable3rdLeaps: Infinity
     // }, 1, 2, (p) => [p.add(StandardHeptatonic.Interval.parse('P5')!)]))
     // .alto(Species5)
-    .soprano(Species2)
-    .soprano(Species2)
-    .soprano(Species2)
-    // .alto(Species5)
+    .soprano(Species5)
     .alto(Species5)
     .tenor(Species5)
+    .bass(Species5)
     // .cantus(Clef.Bass, [
     //     parseNotes(['c3', ctx.parameters.measureLength]),
     //     parseNotes(['d3', ctx.parameters.measureLength]),
@@ -122,11 +159,10 @@ const score = new CounterpointScoreBuilder(ctx)
     //     parseNotes(['c3', ctx.parameters.measureLength]),
     // ])
     // .build(StandardHeptatonic.Scales.C.completeMinor)
-    .build(StandardHeptatonic.Scales.C.major)
+    .build(
+        StandardHeptatonic.Scales.C.major,
+    )
 ;
-
-// score.harmony.elements[0]!.chord =
-//     Chords.major.withBass(StandardHeptatonic.PitchClasses.c);
 
 // score.harmony.elements[score.harmony.elements.length - 1]!.chord =
 //     Chords.major.withBass(StandardHeptatonic.PitchClasses.c);
@@ -155,8 +191,8 @@ solver.onProgress = (p) => {
 }
 
 // solver.limitSteps = 500;
-solver.removeOld = 8;
-solver.batch = 5;
+solver.removeOld = 6;
+solver.batch = 20;
 solver.reportInterval = 1000;
 
 const result = solver.aStar(score, {
@@ -184,7 +220,7 @@ if (false) {
                 : 'gray',
             size: node === solver.startNode ? 3
                 : size ?? (node.isGoal ? 3 : 2),
-            label: `${node.measureIndex}/${node.voiceIndex};${node.thisCost.toFixed(1)}`,
+            label: `${node.measureIndex}/${node.voiceIndex};${node.thisCost.toFixed(1)};${node.debug ?? ''}`,
             // x: n.y! * Math.cos(n.x!), y: n.y! * Math.sin(n.x!)
             x: x ?? n.y!, y: y ?? (- n.x!)
         });
@@ -254,30 +290,31 @@ postMessage({
 } satisfies MainMessage);
 
 if (result) {
-    const ms: MeasureData[] = [];
-    for (let i = 0; i < ctx.targetMeasures; i++) {
-        const t = ctx.parameters.measureLength.mul(i);
-        const p1 = (dt: AsRational) => result.voices[0]?.noteAt(t.add(dt))?.value.pitch;
-        const p2 = (dt: AsRational) => result.voices[1]?.noteAt(t.add(dt))?.value.pitch;
-        const p3 = (dt: AsRational) => result.voices[2]?.noteAt(t.add(dt))?.value.pitch;
-        // Debug.assert(!!(p1 && p2 && p3));
-        ms.push(new MeasureData(
-            [
-                new Note(Rational.from(0.5), p3(0)),
-                new Note(Rational.from(0.5), p1(0)),
-                new Note(Rational.from(0.5), p2(1)),
-                new Note(Rational.from(0.5), p1(1)),
-                new Note(Rational.from(0.5), p3(2)),
-                new Note(Rational.from(0.5), p1(2)),
-                new Note(Rational.from(0.5), p2(3)),
-                new Note(Rational.from(0.5), p1(3)),
-            ],
-            ctx.parameters.measureLength
-        ));
-    }
-    const newVoice = new VoiceData(ms, 0, 'Rendered', Clef.Treble);
-    const newScore = new Score(ctx.parameters,
-        [newVoice, ...result.voices.slice(3)], result.harmony);
+    // const ms: MeasureData[] = [];
+    // for (let i = 0; i < ctx.targetMeasures; i++) {
+    //     const t = ctx.parameters.measureLength.mul(i);
+    //     const p1 = (dt: AsRational) => result.voices[0]?.noteAt(t.add(dt))?.value.pitch;
+    //     const p2 = (dt: AsRational) => result.voices[1]?.noteAt(t.add(dt))?.value.pitch;
+    //     const p3 = (dt: AsRational) => result.voices[2]?.noteAt(t.add(dt))?.value.pitch;
+    //     // Debug.assert(!!(p1 && p2 && p3));
+    //     ms.push(new MeasureData(
+    //         [
+    //             new Note(Rational.from(0.5), p3(0)),
+    //             new Note(Rational.from(0.5), p1(0)),
+    //             new Note(Rational.from(0.5), p2(1)),
+    //             new Note(Rational.from(0.5), p1(1)),
+    //             new Note(Rational.from(0.5), p3(2)),
+    //             new Note(Rational.from(0.5), p1(2)),
+    //             new Note(Rational.from(0.5), p2(3)),
+    //             new Note(Rational.from(0.5), p1(3)),
+    //         ],
+    //         ctx.parameters.measureLength
+    //     ));
+    // }
+    // const newVoice = new VoiceData(ms, 0, 'Rendered', Clef.Treble);
+    // const newScore = new Score(ctx.parameters,
+    //     [newVoice, ...result.voices.slice(3)], result.harmony);
+    const newScore = result;
 
     postMessage({
         type: 'ok',

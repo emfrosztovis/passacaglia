@@ -69,7 +69,10 @@ export class _Pitch
         return new _Interval(Math.abs(steps), distance.abs(), sign);
     }
 
-    absoluteIntervalTo(b: _Pitch): _Interval {
+    /**
+     * Returns the positive simple interval between two pitches.
+     */
+    absoluteSimpleIntervalTo(b: _Pitch): _Interval {
         const a = this.withPeriod(0);
         b = b.withPeriod(0);
         return a.intervalTo(b).abs();

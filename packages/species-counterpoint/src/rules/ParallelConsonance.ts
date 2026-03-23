@@ -10,22 +10,26 @@ export const forbidPerfectsBySimilarMotion: LocalRule = (_ctx, s, x1) => {
     if (!x0?.value.pitch || !x1?.value.pitch) return 0;
 
     const v = x1.parent.container;
-    const sign0 = Math.sign(x0.value.pitch.distanceTo(x1.value.pitch).num);
+    const sign0 = x0.value.pitch.distanceTo(x1.value.pitch).sign();
     for (const voice of s.voices) {
         if (voice == v) continue;
         const n1 = voice.noteAt(x1.globalTime);
         if (!n1?.value.pitch) continue;
+
+        const d1 = x1.value.pitch.intervalTo(n1.value.pitch);
+        if (!isPerfectConsonance(d1)) continue;
+
         const n0 = n1.globalTime.value() < x1.globalTime.value() ? n1 : n1.prevGlobal();
         if (!n0?.value.pitch) continue;
 
-        const sign1 = Math.sign(n0.value.pitch.distanceTo(n1.value.pitch).num);
-        // skip if they're both repeated
-        if (sign0 == sign1 && sign0 == 0) continue;
+        const sign1 = n0.value.pitch.distanceTo(n1.value.pitch).sign();
+        if (sign0 == sign1) {
+            // if (sign0 == 0) continue; // skip if they're both repeated
+            return Infinity;
+        }
 
-        const d0 = x0.value.pitch.absoluteIntervalTo(n0.value.pitch).toSimple();
-        const d1 = x1.value.pitch.absoluteIntervalTo(n1.value.pitch).toSimple();
-        const isSimilarMotion = sign0 == sign1;
-        if ((isSimilarMotion || isPerfectConsonance(d0)) && isPerfectConsonance(d1))
+        const d0 = x0.value.pitch.intervalTo(n0.value.pitch);
+        if (isPerfectConsonance(d0))
             return Infinity;
     }
     return 0;
@@ -36,7 +40,7 @@ export const forbidPerfectsBySimilarMotion: LocalRule = (_ctx, s, x1) => {
  * Forbid perfect consonances that are near each other.
  *
  * Specifically, if the second consonance is on the first beat of the measure:
- * - all perfect consonances that is less a measure apart from it
+ * - all perfect consonances that is less than OR exactly a measure apart from it
  *
  * If the second consonance is not so:
  * - only when the first consonance is on the same beat at the second
@@ -59,14 +63,14 @@ export const forbidNearbyPerfects: LocalRule = (ctx, s, x1) => {
             const py1 = y1?.value.pitch;
             if (!py1) continue;
 
-            const int1 = px1.absoluteIntervalTo(py1);
+            const int1 = px1.intervalTo(py1);
             if (!isPerfectConsonance(int1)) continue;
 
             // check notes from all other voices against this voice
             let py2: H.Pitch | null = null;
             for (
                 let y2 = y1.prevGlobal();
-                y2 && !!(py2 = y2.value.pitch) && t1.sub(y2.globalTime).value() < measureLen;
+                y2 && !!(py2 = y2.value.pitch) && t1.sub(y2.globalTime).value() <= measureLen;
                 y2 = y2?.prevGlobal()
             ) {
                 const x2 = v.noteAt(y2.globalTime);
@@ -74,7 +78,7 @@ export const forbidNearbyPerfects: LocalRule = (ctx, s, x1) => {
                 if (!px2) continue;
 
                 const int2 = px2.intervalTo(py2);
-                if (int2.equals(int1)) return Infinity;
+                if (isPerfectConsonance(int2)) return Infinity;
             }
 
             // check notes from this voice against all other voices
@@ -89,7 +93,7 @@ export const forbidNearbyPerfects: LocalRule = (ctx, s, x1) => {
                 if (!py2) continue;
 
                 const int2 = px2.intervalTo(py2);
-                if (int2.equals(int1)) return Infinity;
+                if (isPerfectConsonance(int2)) return Infinity;
             }
         }
     } else {

@@ -36,6 +36,7 @@ export interface INode extends Hashable {
     readonly cost: number,
     readonly thisCost: number,
     readonly nExpanded?: number,
+    readonly debug?: string;
 }
 
 export type VisitedData = {
@@ -89,6 +90,7 @@ class Node implements INode {
         readonly nStep: number,
         readonly cost: number,
         readonly thisCost: number,
+        readonly debug?: string,
     ) {
         this.#hash = score.hash();
 
@@ -126,7 +128,7 @@ class Node implements INode {
         const voice = m.container;
         const nexts = m.value.getNextSteps(this.score, m);
 
-        const result = nexts.flatMap(({ measure, advanced, cost }) => {
+        const result = nexts.flatMap(({ measure, advanced, cost, debug }) => {
             const newVoice = voice.replaceMeasure(m.index, measure);
             const newScore = this.score.replaceVoice(voice.index, newVoice);
 
@@ -136,7 +138,7 @@ class Node implements INode {
                 return new Node(newScore, this.ctx,
                     this.measureIndex, voice.index, 'note',
                     this.nStep + advanced.value(),
-                    this.cost * Math.pow(POWER, advanced.value()) + cost, cost);
+                    this.cost * Math.pow(POWER, advanced.value()) + cost, cost, debug);
             }
         });
         return result;

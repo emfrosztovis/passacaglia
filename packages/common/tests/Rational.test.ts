@@ -148,7 +148,7 @@ test('max, min', () => {
 
     const min = Rational.from(0).min(3.9, -1.5, 0, 2);
     expect(min.toString()).toBe('-3/2');
-})
+});
 
 test('value', () => {
     const r1 = new Rational(1, 2);
@@ -156,6 +156,17 @@ test('value', () => {
 
     const r2 = new Rational(3, 4);
     expect(r2.value()).toBe(0.75);
+});
+
+test('sign', () => {
+    const r1 = new Rational(1, 2);
+    expect(r1.sign()).toBe(1);
+
+    const r2 = new Rational(0);
+    expect(r2.sign()).toBe(0);
+
+    const r3 = new Rational(3, -4);
+    expect(r3.sign()).toBe(-1);
 });
 
 test('toString', () => {

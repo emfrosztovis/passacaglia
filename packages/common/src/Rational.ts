@@ -164,6 +164,10 @@ export class Rational implements Hashable, Serializable {
         return this.num / this.den;
     }
 
+    sign(): number {
+        return Math.sign(this.num);
+    }
+
     toString(opt?: { alwaysSigned?: boolean, mixedFraction?: boolean }): string {
         const sign = this.num < 0 ? '-'
             : opt?.alwaysSigned ? '+' : '';

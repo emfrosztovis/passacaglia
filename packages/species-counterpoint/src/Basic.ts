@@ -5,7 +5,7 @@ import { SequentialCursor } from "core";
 import { H } from "./Internal";
 import { Rational } from "common";
 import { Score } from "./Score";
-import { ChordElement, HarmonyBackground } from "./Chord";
+import { Chord, ChordElement, HarmonyBackground } from "./Chord";
 
 export type CounterpointMeasureCursor = SequentialCursor<CounterpointMeasure, CounterpointVoice, never>;
 // FIXME: typechecker bug?
@@ -24,7 +24,8 @@ export type MelodicContext = {
 export type Step = {
     measure: CounterpointMeasure,
     advanced: Rational,
-    cost: number
+    cost: number,
+    debug?: string
 };
 
 export function emptyMelodicContext(): MelodicContext {
@@ -151,10 +152,10 @@ export class CounterpointScoreBuilder {
         private ctx: CounterpointContext
     ) { }
 
-    build(scale: H.Scale): Score {
+    build(scale: H.Scale, chords?: Chord[]): Score {
         const ms: ChordElement[] = [];
         for (let i = 0; i < this.ctx.targetMeasures; i++)
-            ms.push(new ChordElement(this.ctx.parameters.measureLength));
+            ms.push(new ChordElement(this.ctx.parameters.measureLength, chords?.at(i)));
 
         const h = new HarmonyBackground(scale, ms);
         return new Score(this.ctx.parameters, this.#voices, h);

@@ -18,7 +18,7 @@ export const enforceSuspension: CandidateRule = (_ctx, s, cur, c) => {
         const n = voice.noteAt(p1!.globalTime)?.value.pitch;
         if (!n) continue;
 
-        if (!isConsonance(n.absoluteIntervalTo(prev.pitch))) {
+        if (!isConsonance(n.absoluteSimpleIntervalTo(prev.pitch))) {
             isChordTone = false;
             break;
         }

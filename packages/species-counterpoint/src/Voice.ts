@@ -25,20 +25,24 @@ export class Note implements DurationalElement, NoteLike, Serializable, Hashable
 
     type?: NonHarmonicType;
 
+    debug?: string;
+
     hash(): string {
         return `${this.duration.hash()},${this.pitch?.hash()},${this.type}`;
     }
 
     serialize() {
-        return [this.duration.serialize(), this.pitch?.serialize(), this.type] as const;
+        return [this.duration.serialize(), this.pitch?.serialize(), this.type, this.debug] as const;
     }
 
-    static deserialize([duration, pitch, type]: Serialized<Note>): Note {
-        return new Note(
+    static deserialize([duration, pitch, type, debug]: Serialized<Note>): Note {
+        const n = new Note(
             Rational.deserialize(duration),
             pitch ? H.Pitch.deserialize(pitch) : null,
             type
         );
+        n.debug = debug;
+        return n;
     }
 
     get isNonHarmonic() {

@@ -34,14 +34,18 @@ export function isStepwiseAround(c: NoteCursor): boolean | undefined {
 }
 
 export function isPerfectConsonance(i: H.Interval) {
-    const simple = i.abs().toSimple().distance.value();
+    const simple = i.toSimple().distance.value();
     return simple == 0 || simple == 7 || simple == 12;
 }
 
-export function isConsonance(i: H.Interval) {
-    const simple = i.abs().toSimple().distance.value();
-    return simple == 0 || simple == 3 || simple == 4 || simple == 7
-        || simple == 8 || simple == 9 || simple == 12;
+/**
+ * Returns `true` if `i` is perfect unison, major or minor third, perfect fourth (IF NOT with bass), perfect fifth, major/minor sixth, perfect octave, or any compound versions of the above intervals.
+ */
+export function isConsonance(i: H.Interval, withBass?: boolean) {
+    const simple = i.toSimple().distance.value();
+    return simple == 0 || simple == 3 || simple == 4
+        || (!withBass && simple == 5)
+        || simple == 7 || simple == 8 || simple == 9 || simple == 12;
 }
 
 export function isLeadingTone(p: H.Pitch, s: H.Scale) {

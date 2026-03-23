@@ -81,10 +81,12 @@ function filterNode(n: string) {
     </NProgress>
 
     <div class="container">
-        <button v-if="result" @click="play(result, [74, 74, 74, 20, 53], { tempo: 180, synth: true })">
-            play
-        </button>
-        <!-- <a v-if="blob" :href="blob" download="result.mxl">download</a> -->
+        <div class="controls">
+            <button v-if="result" @click="play(result, [74, 74, 74, 20, 53], { tempo: 180, synth: true })">
+                play
+            </button>
+            <a v-if="blob" :href="blob" download="result.mxl">download</a>
+        </div>
         <div class="content">
             <div>
                 <MusicScore v-if="source" :file="source" />
@@ -105,11 +107,12 @@ function filterNode(n: string) {
         height: 100%;
     }
 
-    button {
+    .controls {
         position: absolute;
         left: 0;
         top: 0;
     }
+
     .content {
         flex-grow: 1;
         min-width: 500px;

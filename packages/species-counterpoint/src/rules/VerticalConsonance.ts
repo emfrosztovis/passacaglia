@@ -1,32 +1,44 @@
 import { Debug } from "common";
 import { H } from "../Internal";
 import { CandidateRule, LocalRule } from "../Context";
+import { isConsonance } from "./Utils";
 
 /**
- * Enforces that the candidates form consonance with voices that are moving at the same point.
+ * Enforces that the candidates form consonance with voices that are moving at the same point. Forbids certain intervals if bass is involved.
  */
 export const enforceVerticalConsonanceWithMovingLocal: LocalRule
     = (ctx, s, cur) =>
 {
     const pitches: H.Pitch[] = [];
+    let bassPitch: H.Pitch | null = null;
 
     const t = cur.globalTime;
+    const lastVoice = s.voices.at(-1);
     for (const voice of s.voices) {
         const n1 = voice.noteAt(t);
-        if (!n1?.value.pitch || !n1.globalTime.equals(t) || n1.value.type == 'suspension') continue;
+        if (!n1?.value.pitch || !n1.globalTime.equals(t) || n1.value.type == 'suspension')
+            continue; // not moving
 
         const n2 = n1.prevGlobal();
         if (!n2?.value.pitch || !n2.value.pitch.equals(n1.value.pitch)) {
             // moving
             pitches.push(n1.value.pitch);
+            if (voice === lastVoice) bassPitch = n1.value.pitch;
         }
     }
 
     for (let i = 0; i < pitches.length - 1; i++)
         for (let j = i+1; j < pitches.length; j++) {
-            const int = pitches[i].absoluteIntervalTo(pitches[j]).toSimple();
-            const c2 = ctx.harmonyIntervals.get(int);
-            if (!c2) return Infinity;
+            const a = pitches[i], b = pitches[j];
+            const int = a.intervalTo(b);
+            if (!isConsonance(int, !!bassPitch && b.equals(bassPitch))) return Infinity;
+
+            // const int = a.intervalTo(b).abs().toSimple({ preserveUpToSteps: 7 });
+            // const c2 = ctx.harmonyIntervals.get(int);
+            // if (!c2) return Infinity;
+            // if (bassPitch
+            //  && b.equals(bassPitch)
+            //  && ctx.forbidWithBass.has(int)) return Infinity;
         }
     return 0;
 };
@@ -39,22 +51,25 @@ export const enforceVerticalConsonanceWithMoving: CandidateRule
 {
     Debug.assert(c !== null);
     const otherPitches: H.Pitch[] = [];
+    let bassPitch: H.Pitch | null = null;
 
     const tprev = cur.prevGlobal()?.globalTime;
     if (!tprev) return c;
 
     const t = cur.globalTime;
     const v = cur.parent.container;
+    const lastVoice = s.voices.at(-1);
     for (const voice of s.voices) {
         if (voice == v) continue;
         const n1 = voice.noteAt(t);
-        if (!n1 || !n1.value.pitch
-         || (n1.value.isNonHarmonic && !n1.globalTime.equals(t))) continue;
+        if (!n1?.value.pitch || !n1.globalTime.equals(t) || n1.value.type == 'suspension')
+            continue;
 
         const n2 = voice.noteAt(tprev);
         if (!n2 || n2.value.pitch !== n1.value.pitch) {
             // moving
             otherPitches.push(n1.value.pitch);
+            if (voice === lastVoice) bassPitch = n1.value.pitch;
         }
     }
 
@@ -62,9 +77,12 @@ export const enforceVerticalConsonanceWithMoving: CandidateRule
         let newCost = 0;
 
         for (const x of otherPitches) {
-            const int = x.absoluteIntervalTo(p).toSimple({ preserveUpToSteps: 7 }).abs();
+            const int = x.intervalTo(p).abs().toSimple({ preserveUpToSteps: 7 });
             const c2 = ctx.harmonyIntervals.get(int);
-            if (c2 === undefined) {
+            if (!c2 ||
+                (bassPitch && (x.equals(bassPitch) || p.equals(bassPitch))
+                           && ctx.forbidWithBass.has(int)))
+            {
                 c.delete(p);
                 continue outer;
             }
@@ -103,7 +121,7 @@ export const enforceVerticalConsonanceStrict: CandidateRule
         let newCost = 0;
 
         for (const x of otherPitches) {
-            const int = x.absoluteIntervalTo(p).toSimple().abs();
+            const int = x.absoluteSimpleIntervalTo(p);
             const c2 = ctx.harmonyIntervals.get(int);
             if (c2 === undefined) {
                 c.delete(p);
@@ -112,7 +130,7 @@ export const enforceVerticalConsonanceStrict: CandidateRule
             newCost += c2 / otherPitches.length;
 
             if (v == lastVoice
-             && ctx.forbidWithBass.find((f) => f.equals(int)))
+             && ctx.forbidWithBass.has(int))
             {
                 c.delete(p);
                 continue outer;
@@ -121,8 +139,8 @@ export const enforceVerticalConsonanceStrict: CandidateRule
         c.set(p, cost + newCost);
 
         if (bassPitch) {
-            const int = bassPitch.absoluteIntervalTo(p).toSimple();
-            if (ctx.forbidWithBass.find((f) => f.equals(int))) {
+            const int = bassPitch.absoluteSimpleIntervalTo(p);
+            if (ctx.forbidWithBass.has(int)) {
                 c.delete(p);
                 continue;
             }
