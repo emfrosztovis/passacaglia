@@ -41,10 +41,6 @@ export class CounterpointContext {
     obliqueMotionCost = 40;
     contraryMotionCost = 0;
 
-    harmonyIntervals = parsePreferred(
-        ['m3', 0], ['M3', 0], ['m6', 0], ['M6', 0],
-        ['P4', 10], ['P5', 20], ['P8', 50], ['P1', 100]);
-
     melodicIntervals = parsePreferred(
         ['m2',   0], ['M2',   0], ['-m2',  40], ['-M2',  40],
         ['m3',  90], ['M3',  90], ['-m3',  90], ['-M3',  90],
