@@ -159,14 +159,14 @@ export const Species4 = defineSpecies({
 // 5
 
 const schema5: MeasureSchema[] = [
-// {
-//     name: 'sp5.1',
-//     condition: (c, s) => later(c) && s.voices.length > 2 && vdiff(c, s, 'sp5.1'),
-//     notes: (c) => [{
-//         harmonic: true,
-//         duration: c.parameters.measureLength
-//     }],
-// },
+{
+    name: 'sp5.1',
+    condition: (c, s) => later(c) && s.voices.length > 2 && vdiff(c, s, 'sp5.1'),
+    notes: (c) => [{
+        harmonic: true,
+        duration: c.parameters.measureLength
+    }],
+},
 {
     name: 'sp5.2.0',
     condition: (c, s) => first(c) && vdiff(c, s, 'sp5.2.0'),
@@ -252,37 +252,39 @@ const schema5: MeasureSchema[] = [
         duration: c.parameters.measureLength.div(2)
         // FIXME: require suspension
     }]
-}, {
-    name: 'sp5.5.25',
-    condition: (c, s) => later(c) && vdiff(c, s, 'sp5.5.2'),
-    notes: (c) => [{
-        harmonic: true,
-        duration: new Rational(1)
-    }, ...repeat<NoteSchema>(c.parameters.measureLength.value() - 2, () => ({
-        harmonic: true,
-        types: ['passing_tone', 'neighbor'],
-        duration: new Rational(1)
-    })), ...repeat<NoteSchema>(2, () => ({
-        harmonic: true,
-        types: ['passing_tone', 'neighbor'],
-        duration: new Rational(1, 2)
-    }))]
-},{
-    name: 'sp5.5.26',
-    condition: (c, s) => later(c) && vdiff(c, s, 'sp5.5.2'),
-    notes: (c) => [{
-        harmonic: true,
-        duration: new Rational(1)
-    }, ...repeat<NoteSchema>(2, () => ({
-        harmonic: true,
-        types: ['passing_tone', 'neighbor'],
-        duration: new Rational(1, 2)
-    })), ...repeat<NoteSchema>(c.parameters.measureLength.value() - 2, () => ({
-        harmonic: true,
-        types: ['passing_tone', 'neighbor'],
-        duration: new Rational(1)
-    }))]
 },
+// {
+//     name: 'sp5.5.25',
+//     condition: (c, s) => later(c) && vdiff(c, s, 'sp5.5.2'),
+//     notes: (c) => [{
+//         harmonic: true,
+//         duration: new Rational(1)
+//     }, ...repeat<NoteSchema>(c.parameters.measureLength.value() - 2, () => ({
+//         harmonic: true,
+//         types: ['passing_tone', 'neighbor'],
+//         duration: new Rational(1)
+//     })), ...repeat<NoteSchema>(2, () => ({
+//         harmonic: true,
+//         types: ['passing_tone', 'neighbor'],
+//         duration: new Rational(1, 2)
+//     }))]
+// },
+// {
+//     name: 'sp5.5.26',
+//     condition: (c, s) => later(c) && vdiff(c, s, 'sp5.5.2'),
+//     notes: (c) => [{
+//         harmonic: true,
+//         duration: new Rational(1)
+//     }, ...repeat<NoteSchema>(2, () => ({
+//         harmonic: true,
+//         types: ['passing_tone', 'neighbor'],
+//         duration: new Rational(1, 2)
+//     })), ...repeat<NoteSchema>(c.parameters.measureLength.value() - 2, () => ({
+//         harmonic: true,
+//         types: ['passing_tone', 'neighbor'],
+//         duration: new Rational(1)
+//     }))]
+// },
 // {
 //     name: 'sp5.5.3',
 //     condition: (c, s) => later(c) && vdiff(c, s, 'sp5.5.3'),
@@ -316,18 +318,20 @@ const schema5: MeasureSchema[] = [
             duration: new Rational(1)
         }))]
     }
-}, {
-    name: 'sp5.5.5',
-    condition: (c, s) => later(c) && vdiff(c, s, 'sp5.5.5'),
-    notes: (c) => [{
-        harmonic: true,
-        duration: c.parameters.measureLength.mul(3).div(4)
-    }, ...repeat<NoteSchema>(c.parameters.measureLength.value() / 2, () => ({
-        harmonic: true,
-        types: ['passing_tone', 'neighbor'],
-        duration: new Rational(1, 2)
-    }))]
-},];
+},
+// {
+//     name: 'sp5.5.5',
+//     condition: (c, s) => later(c) && vdiff(c, s, 'sp5.5.5'),
+//     notes: (c) => [{
+//         harmonic: true,
+//         duration: c.parameters.measureLength.mul(3).div(4)
+//     }, ...repeat<NoteSchema>(c.parameters.measureLength.value() / 2, () => ({
+//         harmonic: true,
+//         types: ['passing_tone', 'neighbor'],
+//         duration: new Rational(1, 2)
+//     }))]
+// },
+];
 
 export const Species5 = defineSpecies({
     forbidRepeatedNotes: true,

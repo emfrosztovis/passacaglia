@@ -1,7 +1,8 @@
 export * from './Motion';
 export * from './Melody';
 export * from './Scales';
-export * from './Harmony';
+export * from './ValidChords';
+export * from './FunctionalHarmony';
 export * from './VerticalConsonance';
 export * from './ParallelConsonance';
 

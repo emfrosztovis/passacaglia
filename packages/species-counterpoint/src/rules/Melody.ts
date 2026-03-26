@@ -155,7 +155,7 @@ export const avoidRepeat2: CandidateRule = (ctx, _s, cur, c, attr) =>
 
     const p3 = p2!.prevGlobal();
     const prev3 = p3?.value.pitch;
-    if (!prev3) return c;
+    if (!prev3 || !p3.duration.equals(p2.duration)) return c;
 
     if (prev3.equals(prev) && p3.duration.equals(p1.duration)) {
         return c.filter((x) => !x.equals(prev2));

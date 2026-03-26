@@ -37,8 +37,8 @@ export class CounterpointContext {
     nonHarmonicToneRules: Partial<Record<NonHarmonicType, CandidateRule[]>> = {};
     harmonicToneRules: CandidateRule[] = [];
 
-    similarMotionCost = 80;
-    obliqueMotionCost = 40;
+    similarMotionCost = 40;
+    obliqueMotionCost = 20;
     contraryMotionCost = 0;
 
     melodicIntervals = parsePreferred(
@@ -48,7 +48,7 @@ export class CounterpointContext {
         ['P5',  90],              ['-P5',  90],
         ['m6',  90], ['M6',  90], ['-m6',  90], ['-M6',  90],
         ['P8', 120],              ['-P8', 120],
-        ['P1',  50],
+        ['P1', 200],
     );
 
     forbidWithBass = new HashMap([[H.Interval.parse('P4')!, undefined]]);

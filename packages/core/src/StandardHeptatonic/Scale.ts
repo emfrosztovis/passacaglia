@@ -17,6 +17,10 @@ export class _Scale
     readonly degrees: readonly _Pitch[];
     readonly intervals: readonly _Interval[];
 
+    override get root(): _Pitch {
+        return super.root as _Pitch;
+    }
+
     protected constructor(ints: readonly _Interval[], degs: readonly _Pitch[]) {
         super(_System, ints, degs);
         this.degrees = degs;
@@ -112,6 +116,8 @@ export class _Degree extends Degree<StandardHeptatonicSystem> {
     }
 
     override toPitch = super.toPitch as () => _Pitch;
+    override next = super.next as () => _Degree;
+    override previous = super.previous as () => _Degree;
 
     toString(opt?: { preferArabic?: boolean }): string {
         const name = (opt?.preferArabic && this.scale.degrees.length <= RomanNumerals.length)

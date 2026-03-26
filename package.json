@@ -11,7 +11,7 @@
   "keywords": [],
   "author": "",
   "license": "AGPL-3.0-only",
-  "packageManager": "pnpm@10.15.0",
+  "packageManager": "pnpm@10.33.0",
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.15",
     "concurrently": "^9.2.1",

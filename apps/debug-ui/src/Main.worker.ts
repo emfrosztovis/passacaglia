@@ -1,5 +1,5 @@
 import { Chord, Chords, CounterpointContext, CounterpointScoreBuilder, CounterpointSolver, defineImitation, MeasureData, Note, parseNotes, Rules, Score, Species1, Species2, Species3, Species4, Species5, VoiceData, type INode } from 'species-counterpoint';
-import { Debug, LogLevel, Rational, setLogger, type AsRational, type Serialized } from 'common';
+import { Debug, LogLevel, Rational, repeat, setLogger, type AsRational, type Serialized } from 'common';
 import { StandardHeptatonic } from 'core';
 import { Clef, toMxl } from 'musicxml';
 import { DirectedGraph } from 'graphology';
@@ -7,79 +7,31 @@ import { DirectedGraph } from 'graphology';
 import * as d3 from 'd3';
 
 const ctx = new CounterpointContext(
-    16, // targetMeasures
+    10, // targetMeasures
     {
         measureLength: new Rational(4)
     }
 );
 
 ctx.harmonyRules = [
-    // Rules.enforceChordProgression([
-    //     [Chords.minor.withRoot(StandardHeptatonic.PitchClasses.c)],
-    //     [
-    //         Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
-    //         Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
-    //         Chords.dim.withRoot(StandardHeptatonic.PitchClasses.b),
-    //         Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
-    //     ],
-    //     [
-    //         Chords.minor.withRoot(StandardHeptatonic.PitchClasses.c),
-    //         Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.c),
-    //         Chords.minor.withRoot(StandardHeptatonic.PitchClasses.f),
-    //         Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.f),
-    //     ],
-    //     [
-    //         Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
-    //         Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
-    //         Chords.dim.withRoot(StandardHeptatonic.PitchClasses.b),
-    //         Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
-    //     ],
-    //     [
-    //         Chords.minor.withRoot(StandardHeptatonic.PitchClasses.c),
-    //         Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.c)
-    //     ],
-    //     // [Chords.major.withRoot(StandardHeptatonic.PitchClasses.c)],
-    //     // [
-    //     //     // Chords.major.withRoot(StandardHeptatonic.PitchClasses.f),
-    //     //     // Chords.major6.withRoot(StandardHeptatonic.PitchClasses.f),
-    //     //     Chords.minor.withRoot(StandardHeptatonic.PitchClasses.d),
-    //     //     Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.d),
-    //     // ],
-    //     // [
-    //     //     Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
-    //     //     Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
-    //     //     // Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
-    //     // ],
-    //     // [
-    //     //     Chords.major.withRoot(StandardHeptatonic.PitchClasses.c),
-    //     //     Chords.major6.withRoot(StandardHeptatonic.PitchClasses.c),
-    //     //     Chords.minor.withRoot(StandardHeptatonic.PitchClasses.a),
-    //     //     Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.a),
-    //     // ],
-    //     // [
-    //     //     Chords.major.withRoot(StandardHeptatonic.PitchClasses.f),
-    //     //     Chords.major6.withRoot(StandardHeptatonic.PitchClasses.f),
-    //     //     Chords.minor.withRoot(StandardHeptatonic.PitchClasses.d),
-    //     //     Chords.minor6.withRoot(StandardHeptatonic.PitchClasses.d),
-    //     // ],
-    //     // [
-    //     //     Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
-    //     //     Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
-    //     //     // Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
-    //     // ],
-    //     // [Chords.major.withRoot(StandardHeptatonic.PitchClasses.c)],
-    //     // [
-    //     //     Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
-    //     //     Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
-    //     //     // Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
-    //     // ],
-    //     // [Chords.major.withRoot(StandardHeptatonic.PitchClasses.c)],
-    // ]),
+    Rules.enforceFunctionalProgressionMajor,
     Rules.enforceValidChords,
+    // Rules.enforceChordProgression([
+    //     ...repeat(14, () => undefined),
+    //     [
+    //         Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
+    //         Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
+    //         Chords.dim.withRoot(StandardHeptatonic.PitchClasses.b),
+    //         Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
+    //     ],
+    //     [
+    //         Chords.major.withRoot(StandardHeptatonic.PitchClasses.c)
+    //     ]
+    // ])
 ];
 
 ctx.localRules = [
-    // Rules.limitConsecutiveLeaps,
+    Rules.limitConsecutiveLeaps,
     Rules.forbidPerfectsBySimilarMotion,
     Rules.forbidNearbyPerfects,
     Rules.prioritizeVoiceMotion,
@@ -88,14 +40,14 @@ ctx.localRules = [
 
 ctx.candidateRulesBefore = [
     Rules.enforceScaleTones,
-    // Rules.enforceDirectionalDegreeMatrix(Rules.DegreeMatrixPreset.major),
+    Rules.enforceDirectionalDegreeMatrix(Rules.DegreeMatrixPreset.major),
     // Rules.enforceMinor(StandardHeptatonic.PitchClasses.c),
     Rules.enforceStepwiseAroundShortNotes,
     Rules.enforcePassingTones,
     Rules.enforceNeighborTones,
     Rules.enforceSuspension,
     Rules.forbidVoiceOverlapping2,
-    // Rules.avoidRepeat2,
+    Rules.avoidRepeat2,
 ];
 
 ctx.candidateRulesAfter = [
@@ -145,11 +97,24 @@ const score = new CounterpointScoreBuilder(ctx)
     //     maxIgnorable3rdLeaps: Infinity,
     //     maxUnidirectionalConsecutiveLeaps: Infinity,
     //     maxUnidirectionalIgnorable3rdLeaps: Infinity
-    // }, 1, 2, (p) => [p.add(StandardHeptatonic.Interval.parse('P5')!)]))
+    // }, 1, 1, (p) => [
+    //     p.add(StandardHeptatonic.Interval.parse('P5')!),
+    //     p.add(StandardHeptatonic.Interval.parse('d5')!),
+    // ]))
+    // .alto(Species3)
+    // .bass(defineImitation({
+    //     forbidRepeatedNotes: false,
+    //     maxConsecutiveLeaps: Infinity,
+    //     maxIgnorable3rdLeaps: Infinity,
+    //     maxUnidirectionalConsecutiveLeaps: Infinity,
+    //     maxUnidirectionalIgnorable3rdLeaps: Infinity
+    // }, 1, 3, (p) => [
+    //     p.add(StandardHeptatonic.Interval.parse('-P8')!),
+    // ]))
     .soprano(Species5)
-    .alto(Species1)
-    .tenor(Species1)
+    .alto(Species5)
     .bass(Species1)
+    // .bass(Species1)
     // .cantus(Clef.Bass, [
     //     parseNotes(['c3', ctx.parameters.measureLength]),
     //     parseNotes(['d3', ctx.parameters.measureLength]),
@@ -180,10 +145,10 @@ const score = new CounterpointScoreBuilder(ctx)
     //     parseNotes(['c3', ctx.parameters.measureLength]),
     // ])
     // .build(StandardHeptatonic.Scales.completeMinor(StandardHeptatonic.PitchClasses.c))
-    .build(StandardHeptatonic.Scales.C.chromatic)
-    // .build(
-    //     StandardHeptatonic.Scales.C.major,
-    // )
+    // .build(StandardHeptatonic.Scales.C.chromatic)
+    .build(
+        StandardHeptatonic.Scales.C.major,
+    )
 ;
 
 Debug.level = LogLevel.Trace;
@@ -207,15 +172,14 @@ solver.onProgress = (p) => {
 }
 
 // solver.limitSteps = 500;
-solver.removeOld = 4;
-solver.batch = 10;
+solver.removeOld = 6;
+solver.batch = 50;
 solver.reportInterval = 2000;
 
 const result = solver.aStar(score, {
     type: 'constant',
     value: 50,
 });
-// const result = solver.beamSearch(score, 200);
 
 console.log(result?.toString());
 

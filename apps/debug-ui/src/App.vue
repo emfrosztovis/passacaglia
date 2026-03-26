@@ -82,7 +82,7 @@ function filterNode(n: string) {
 
     <div class="container">
         <div class="controls">
-            <button v-if="result" @click="play(result, [74, 74, 74, 20, 53], { tempo: 180, synth: true })">
+            <button v-if="result" @click="play(result, [74, 74, 74, 74, 53], { tempo: 180, synth: true })">
                 play
             </button>
             <a v-if="blob" :href="blob" download="result.xml">download</a>
