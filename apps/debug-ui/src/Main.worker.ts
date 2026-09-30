@@ -1,7 +1,7 @@
-import { Chord, Chords, CounterpointContext, CounterpointScoreBuilder, CounterpointSolver, defineImitation, MeasureData, Note, parseNotes, Rules, Score, Species1, Species2, Species3, Species4, Species5, VoiceData, type INode } from 'species-counterpoint';
-import { Debug, LogLevel, Rational, repeat, setLogger, type AsRational, type Serialized } from 'common';
+import { Chords, CounterpointContext, CounterpointScoreBuilder, CounterpointSolver, defineImitation, Rules, Species1, Species5, VoiceData, type INode } from 'species-counterpoint';
+import { Debug, LogLevel, Rational, setLogger, type Serialized } from 'common';
 import { StandardHeptatonic } from 'core';
-import { Clef, toMxl } from 'musicxml';
+import { toMxl } from 'musicxml';
 import { DirectedGraph } from 'graphology';
 
 import * as d3 from 'd3';
@@ -14,12 +14,13 @@ const ctx = new CounterpointContext(
 );
 
 ctx.harmonyRules = [
-    // Rules.enforceFunctionalProgressionMajor,
-    Rules.enforceRootProgression([
-        StandardHeptatonic.Interval.parse('P4')!,
-        StandardHeptatonic.Interval.parse('P5')!,
-        StandardHeptatonic.Interval.parse('m2')!,
-    ], [Chords.major, Chords.major6, Chords.minor, Chords.minor6, Chords.dim, Chords.dim6]),
+    Rules.enforceFunctionalProgressionMajor,
+    // Rules.enforceRootProgression([
+    //     StandardHeptatonic.Interval.parse('P4')!,
+    //     StandardHeptatonic.Interval.parse('P5')!,
+    //     StandardHeptatonic.Interval.parse('m2')!,
+    //     // StandardHeptatonic.Interval.parse('M2')!,
+    // ], [Chords.major, Chords.major6, Chords.minor, Chords.minor6, Chords.dim, Chords.dim6]),
     Rules.enforceValidChords,
 ];
 
@@ -65,7 +66,7 @@ ctx.nonHarmonicToneRules = {
     ],
 };
 
-ctx.allowUnison = false;
+ctx.allowUnison = true;
 
 const score = new CounterpointScoreBuilder(ctx)
     // .cantus(Clef.Treble, [
@@ -83,17 +84,17 @@ const score = new CounterpointScoreBuilder(ctx)
     //     parseNotes(['c5', ctx.parameters.measureLength]),
     // ])
     .soprano(Species5)
-    .alto(defineImitation({
-        forbidRepeatedNotes: false,
-        maxConsecutiveLeaps: Infinity,
-        maxIgnorable3rdLeaps: Infinity,
-        maxUnidirectionalConsecutiveLeaps: Infinity,
-        maxUnidirectionalIgnorable3rdLeaps: Infinity
-    }, 0, 2, (p) => [
-        p.add(StandardHeptatonic.Interval.parse('-P5')!),
-        p.add(StandardHeptatonic.Interval.parse('-d5')!),
-    ]))
-    // .alto(Species5)
+    // .alto(defineImitation({
+    //     forbidRepeatedNotes: false,
+    //     maxConsecutiveLeaps: Infinity,
+    //     maxIgnorable3rdLeaps: Infinity,
+    //     maxUnidirectionalConsecutiveLeaps: Infinity,
+    //     maxUnidirectionalIgnorable3rdLeaps: Infinity
+    // }, 0, 2, (p) => [
+    //     p.add(StandardHeptatonic.Interval.parse('-P5')!),
+    //     p.add(StandardHeptatonic.Interval.parse('-d5')!),
+    // ]))
+    .alto(Species5)
     // .bass(defineImitation({
     //     forbidRepeatedNotes: false,
     //     maxConsecutiveLeaps: Infinity,
@@ -103,7 +104,7 @@ const score = new CounterpointScoreBuilder(ctx)
     // }, 1, 3, (p) => [
     //     p.add(StandardHeptatonic.Interval.parse('-P8')!),
     // ]))
-    // .tenor(Species5)
+    .tenor(Species5)
     .bass(Species1)
     // .cantus(Clef.Bass, [
     //     parseNotes(['c3', ctx.parameters.measureLength]),
@@ -163,7 +164,7 @@ solver.onProgress = (p) => {
 
 // solver.limitSteps = 500;
 solver.removeOld = 4;
-solver.batch = 25;
+solver.batch = 50;
 solver.reportInterval = 2000;
 
 const result = solver.aStar(score, {

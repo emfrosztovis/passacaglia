@@ -80,9 +80,8 @@ export const enforceMinor: (root: H.Pitch) => CandidateRule =
 (root) => (_ctx, _s, cur, c, t) => {
     const v = cur.parent.container;
     const scale = H.Scales.completeMinor(root);
-    const scaleTones = new HashMap<H.Pitch, number>(
-        scale.getDegreesInRange(v.lowerRange, v.higherRange).map((x) => [x.toPitch(), 0]));
-    if (c === null) c = scaleTones;
+    if (c === null) c = new HashMap<H.Pitch, number>(
+        scale.getDegreesInRange(v.lowerRange, v.higherRange).map((x) => [x.toPitch(), 0]));;
     if (t === 'suspension') return c;
 
     const n1 = cur.prevGlobal();

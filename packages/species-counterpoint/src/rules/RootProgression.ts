@@ -10,8 +10,11 @@ export const enforceRootProgression: (i: H.Interval[], c: Chord[]) => HarmonyRul
     const prev = cur.prev()?.value.chord;
     if (!prev) {
         // start with the tonic
-        const tonic = Chords.major.withRoot(scale.root)
-        return c ? c.filter((x) => x.equals(tonic)) : new HashMap([[tonic, 0]]);
+        const tonicMajor = Chords.major.withRoot(scale.root);
+        const tonicMinor = Chords.minor.withRoot(scale.root);
+        return c
+            ? c.filter((x) => x.equals(tonicMajor) || x.equals(tonicMinor))
+            : new HashMap([[tonicMajor, 0], [tonicMinor, 0]]);
     }
 
     const newChords = new HashMap(rootIntervals.flatMap(

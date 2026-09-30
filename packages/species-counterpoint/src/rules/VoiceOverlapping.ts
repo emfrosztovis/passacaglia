@@ -24,6 +24,13 @@ export const forbidVoiceOverlapping2: CandidateRule = (ctx, s, cur, c, type) =>
             if (upper === undefined || nord < upper)
                 upper = nord;
         }
+
+        const before = v.noteAt(cur.globalTime)?.prevGlobal();
+        if (before) {
+            const v = before.value.pitch?.ord().value();
+            if (v && (upper === undefined || v < upper))
+                upper = v - (ctx.allowUnison ? 1 : 0);
+        }
     }
     if (iv < s.voices.length - 1) {
         const v = s.voices[iv + 1];
@@ -35,6 +42,13 @@ export const forbidVoiceOverlapping2: CandidateRule = (ctx, s, cur, c, type) =>
             if (!nord) continue;
             if (lower === undefined || nord > lower)
                 lower = nord;
+        }
+
+        const before = v.noteAt(cur.globalTime)?.prevGlobal();
+        if (before) {
+            const v = before.value.pitch?.ord().value();
+            if (v && (lower === undefined || v > lower))
+                lower = v + (ctx.allowUnison ? 1 : 0);
         }
     }
 
