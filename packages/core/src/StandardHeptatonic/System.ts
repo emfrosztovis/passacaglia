@@ -13,4 +13,4 @@ export const _System = new class StandardHeptatonicSystem extends ET12System {
     readonly degreeOffsets = Rational.array([0, 2, 4, 5, 7, 9, 11]);
 }();
 
-export type StandardHeptatonicSystem = typeof _System;
+export type System = typeof _System;

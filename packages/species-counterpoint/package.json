@@ -1,5 +1,5 @@
 {
-  "name": "species-counterpoint",
+  "name": "serialism",
   "private": true,
   "type": "module",
   "version": "1.0.0",
@@ -30,7 +30,6 @@
   "keywords": [],
   "author": "",
   "license": "AGPL-3.0-only",
-  "packageManager": "pnpm@10.15.0",
   "devDependencies": {
     "@types/memoizee": "^0.4.12",
     "vitest": "^4.0.15"

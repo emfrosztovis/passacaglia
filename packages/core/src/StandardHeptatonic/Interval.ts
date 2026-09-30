@@ -1,6 +1,6 @@
 import { AsRational, Debug, Rational, Serializable, Serialized } from "common";
 import { Interval } from "../Interval";
-import { _System, StandardHeptatonicSystem } from "./System";
+import { _System, System } from "./System";
 import { _Pitch } from "./Pitch";
 
 const MultiplierAdverbs = ['', '', 'doubly', 'triply'];
@@ -99,7 +99,7 @@ const IntervalData: [semitones: number, q: Quality][][] = [
  * A signed interval in the standard heptatonic system.
  */
 export class _Interval
-    extends Interval<StandardHeptatonicSystem>
+    extends Interval<System>
     implements Serializable
 {
     constructor(steps: number, distance: AsRational, sign: 1 | -1 = 1) {

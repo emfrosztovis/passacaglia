@@ -1,17 +1,15 @@
 import { AsRational, Debug, Serializable, Serialized } from "common";
 import { Degree } from "../Degree";
 import { Scale } from "../Scale";
-import { _System, StandardHeptatonicSystem } from "./System";
+import { _System, System } from "./System";
 import { _Pitch } from "./Pitch";
 import { Accidental } from "./Accidental";
 import { _Interval } from "./Interval";
-import { Interval } from "../Interval";
-import { Pitch } from "../Pitch";
 
 const RomanNumerals = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'];
 
 export class _Scale
-    extends Scale<StandardHeptatonicSystem>
+    extends Scale<System>
     implements Serializable
 {
     readonly degrees: readonly _Pitch[];
@@ -98,7 +96,7 @@ export class _Scale
     }
 }
 
-export class _Degree extends Degree<StandardHeptatonicSystem> {
+export class _Degree extends Degree<System> {
     public override readonly scale: _Scale;
 
     constructor(

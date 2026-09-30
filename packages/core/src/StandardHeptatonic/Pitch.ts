@@ -1,17 +1,18 @@
 import { AsRational, Rational, Serializable, Serialized } from "common";
-import { _System, StandardHeptatonicSystem } from "./System";
+import { _System, System } from "./System";
 import { _Interval } from "./Interval";
 import { ET12Pitch } from "../ET12/Pitch";
 import { Accidental } from "./Accidental";
+import { PitchConstructor } from "../Pitch";
 
 /**
  * A pitch in the standard heptatonic system. The `period` corresponds to the octave number in scientific notation.
  */
 export class _Pitch
-    extends ET12Pitch<StandardHeptatonicSystem>
+    extends ET12Pitch<System>
     implements Serializable
 {
-    // static readonly system = _System;
+    static readonly system = _System;
 
     constructor(deg: number, acci: AsRational = 0, period: number = 0) {
         super(_System, deg, acci, period);
@@ -108,4 +109,4 @@ export class _Pitch
     }
 }
 
-// _Pitch satisfies PitchConstructor<StandardHeptatonicSystem, _Pitch>;
+_Pitch satisfies PitchConstructor<System, _Pitch>;
