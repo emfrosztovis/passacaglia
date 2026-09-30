@@ -2,6 +2,7 @@ import { Debug, HashMap } from "common";
 import { HarmonyRule } from "../Context";
 import { Chord, Chords } from "../Chord";
 import { H } from "../Internal";
+import memoize from "memoizee";
 
 function getDegreeTriads(i: number, scale: H.Scale) {
     const t1 = scale.at(i),
@@ -11,8 +12,16 @@ function getDegreeTriads(i: number, scale: H.Scale) {
     return [chord, chord.toPosition(1)];
 }
 
+const triadsMap = memoize(
+    (array: number[], scale: H.Scale) =>
+        new HashMap(array.flatMap((x) => getDegreeTriads(x, scale)).map((x) => [x, 0])),
+    {
+        normalizer: ([a, s]) => a.map((x) => x.toString()).join(',') + s.hash()
+    }
+)
+
 function triads(array: number[], scale: H.Scale, c: HashMap<Chord, number> | null) {
-    const map = new HashMap(array.flatMap((x) => getDegreeTriads(x, scale)).map((x) => [x, 0]));
+    const map = triadsMap(array, scale);
     return c ? c.intersectWith(map) : map;
 }
 

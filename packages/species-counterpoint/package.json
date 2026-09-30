@@ -24,6 +24,7 @@
     "install": "^0.13.0",
     "jzz": "^1.9.6",
     "jzz-synth-tiny": "^1.4.4",
+    "memoizee": "^0.4.17",
     "musicxml": "workspace:*"
   },
   "keywords": [],
@@ -31,6 +32,7 @@
   "license": "AGPL-3.0-only",
   "packageManager": "pnpm@10.15.0",
   "devDependencies": {
+    "@types/memoizee": "^0.4.12",
     "vitest": "^4.0.15"
   }
 }

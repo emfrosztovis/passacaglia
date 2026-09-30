@@ -1,52 +1,6 @@
 import { Debug, HashMap } from "common";
 import { H } from "../Internal";
 import { CandidateRule, LocalRule } from "../Context";
-import { CounterpointMeasure, CounterpointVoice } from "../Basic";
-
-/**
- * Forbid voice crossing, and optionally (if `allowUnison` is set in the context) also forbid unison.
- */
-export const forbidVoiceOverlapping2: CandidateRule = (ctx, s, cur, c, type) =>
-{
-    Debug.assert(c !== null);
-
-    let upper: number | undefined;
-    let lower: number | undefined;
-
-    const iv = cur.parent.container.index;
-    const end = cur.globalEndTime.value();
-    if (iv > 0) {
-        const v = s.voices[iv - 1];
-        for (let cur2 = v.noteAt(cur.globalTime);
-             cur2 && cur2.globalTime.value() < end;
-             cur2 = cur2.nextGlobal())
-        {
-            const nord = cur2.value.pitch?.ord().value();
-            if (!nord) continue;
-            if (upper === undefined || nord < upper)
-                upper = nord;
-        }
-    }
-    if (iv < s.voices.length - 1) {
-        const v = s.voices[iv + 1];
-        for (let cur2 = v.noteAt(cur.globalTime);
-             cur2 && cur2.globalTime.value() < end;
-             cur2 = cur2.nextGlobal())
-        {
-            const nord = cur2.value.pitch?.ord().value();
-            if (!nord) continue;
-            if (lower === undefined || nord > lower)
-                lower = nord;
-        }
-    }
-
-    return c.filter((p) => {
-        const ord = p.ord().value();
-        if (upper !== undefined && (ord > upper || (!ctx.allowUnison && ord == upper))) return false;
-        if (lower !== undefined && (ord < lower || (!ctx.allowUnison && ord == lower))) return false;
-        return true;
-    })
-}
 
 /**
  * Only allow melodic intervals specified in CounterpointContext in the melody.
@@ -93,54 +47,6 @@ export const enforceStepwiseAroundShortNotes: CandidateRule = (ctx, _s, cur, c, 
     return c.filter((p) => Math.abs(prev.stepsTo(p)) == 1);
 };
 
-/**
- * Make sure leaps greater than a thrid are prepared by stepwise opposite movement before them.
- */
-export const enforceLeapPreparationBefore: CandidateRule = (ctx, _s, cur, c, attr) =>
-{
-    Debug.assert(c !== null);
-    const p1 = cur.prevGlobal();
-    const prev = p1?.value.pitch;
-    if (!prev) return c;
-
-    const p2 = p1!.prevGlobal();
-    const prev2 = p2?.value.pitch;
-    if (!prev2) return c;//.filter((x) => prev.intervalTo(x).steps < 3);
-
-    const int0 = prev2.intervalTo(prev);
-
-    return c.filter((x) => {
-        const int = prev.intervalTo(x);
-        if (int.steps < 3) return true;
-        // it's going to be a leap
-        return int0.steps == 1 && int.sign == -int0.sign;
-    });
-};
-
-/**
- * Make sure leaps greater than a thrid are prepared by stepwise opposite movement after them.
- */
-export const enforceLeapPreparationAfter: CandidateRule = (_ctx, _s, cur, c) =>
-{
-    Debug.assert(c !== null);
-
-    const p1 = cur.prevGlobal();
-    const prev = p1?.value.pitch;
-    if (!prev) return c;
-
-    const p2 = p1!.prevGlobal();
-    const prev2 = p2?.value.pitch;
-    if (!prev2) return c;
-
-    const int0 = prev2.intervalTo(prev);
-    if (int0.steps < 3) return c;
-
-    return c.filter((x) => {
-        const int = prev.intervalTo(x);
-        return int.steps >= 3 || (int.steps == 1 && int.sign == -int0.sign);
-    });
-};
-
 export const avoidRepeat2: CandidateRule = (ctx, _s, cur, c, attr) =>
 {
     Debug.assert(c !== null);
@@ -162,20 +68,3 @@ export const avoidRepeat2: CandidateRule = (ctx, _s, cur, c, attr) =>
     }
     return c;
 }
-
-/**
- * Limit consecutive leaps according to the voice's melodic settings.
- */
-export const limitConsecutiveLeaps: LocalRule = (_ctx, _s, x1) => {
-    Debug.assert(x1.container instanceof CounterpointMeasure);
-    Debug.assert(x1.parent.container instanceof CounterpointVoice);
-    const m = x1.container.melodicContext;
-    const settings = x1.parent.container.melodySettings;
-    if (!settings) return 0;
-    if (m.nConsecutiveLeaps - Math.min(m.n3rdLeaps, settings.maxIgnorable3rdLeaps)
-            > settings.maxConsecutiveLeaps
-     || m.nUnidirectionalConsecutiveLeaps - Math.min(m.nUnidirectional3rdLeaps, settings.maxUnidirectionalIgnorable3rdLeaps)
-            > settings.maxUnidirectionalConsecutiveLeaps)
-        return Infinity;
-    return 0;
-};

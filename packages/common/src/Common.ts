@@ -20,7 +20,7 @@ export type Serialized<T extends Serializable> = ReturnType<T['serialize']>;
 export class HashMap<P extends Hashable, V = void> {
     #map = new Map<string, [P, V]>();
 
-    constructor(it?: Iterable<[...[P, V]]>) {
+    constructor(it?: Iterable<readonly [...[P, V]]>) {
         if (it) for (const p of it)
             this.set(...p);
     }

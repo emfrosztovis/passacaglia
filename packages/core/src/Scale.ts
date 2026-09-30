@@ -1,4 +1,4 @@
-import { AsRational, Debug, rotateArray } from "common";
+import { AsRational, Debug, Hashable, rotateArray } from "common";
 import { Interval } from "./Interval";
 import { Pitch } from "./Pitch";
 import { PitchSystem } from "./PitchSystem";
@@ -7,7 +7,7 @@ import { Degree } from "./Degree";
 /**
  * Represents a scale in a pitch system, starting from a given pitch class (the root) and consisting of several degrees. Notably, we allow enharmonically equal tones in the scale. This is to accomodate spelling alternatives (as in the chromatic scale).
  */
-export abstract class Scale<S extends PitchSystem> {
+export abstract class Scale<S extends PitchSystem> implements Hashable {
     /** List of degrees. Always non-decreasing and spans less than the system's period. The first degree is the root. */
     abstract readonly degrees: readonly Pitch<S>[];
 
@@ -18,12 +18,14 @@ export abstract class Scale<S extends PitchSystem> {
         return this.degrees[0];
     }
 
+    #hash?: string;
+
     protected constructor(
         public readonly system: S,
         ints: readonly Interval<S>[],
         degs: readonly Pitch<S>[],
     ) {
-        Debug.assert(ints.length > 0 && ints.length == degs.length)
+        Debug.assert(ints.length > 0 && ints.length == degs.length);
     }
 
     protected abstract _create(ints: readonly Interval<S>[], degs: readonly Pitch<S>[]): this;
@@ -31,8 +33,14 @@ export abstract class Scale<S extends PitchSystem> {
 
     abstract parseDegree(ex: string): Degree<S> | null;
 
+    hash(): string {
+        if (!this.#hash)
+            this.#hash = `${this.root.hash()};${this.intervals.map((x) => x.hash()).join(',')}`;
+        return this.#hash;
+    }
+
     equals(other: Scale<S>): boolean {
-        return this.root.equals(other.root) && this.intervalEquals(other);
+        return this.#hash == other.#hash;
     }
 
     intervalEquals(other: Scale<S>): boolean {

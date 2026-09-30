@@ -150,7 +150,6 @@ class Node implements INode {
 }
 
 export class CounterpointSolver {
-    limitSteps = -1;
     batch = 5;
     removeOld = 2; // remove old nodes that are this many measures away
     reportInterval = 1000;
@@ -168,13 +167,6 @@ export class CounterpointSolver {
     }
 
     constructor(private ctx: CounterpointContext) {}
-
-    bfs(s: Score) {
-        const open: Node[] = [];
-        this.#parents = new HashMap<Node, Node>();
-        this.#start = new Node(s, this.ctx, 0, -1, 'initial', 0, 0, 0);
-        open.push(this.#start);
-    }
 
     aStar(s: Score, strategy: CounterpointSolverRewardStrategy) {
         let cmp: (a: Node, b: Node) => number;
@@ -249,9 +241,6 @@ export class CounterpointSolver {
 
                 nNode++;
                 nNeighbor += neighbors.length;
-
-                if (this.limitSteps > 0 && nNode > this.limitSteps)
-                    return null;
             }
             newNodes.forEach((x) => open!.push(x));
         }

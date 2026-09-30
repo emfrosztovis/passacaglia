@@ -7,32 +7,25 @@ import { DirectedGraph } from 'graphology';
 import * as d3 from 'd3';
 
 const ctx = new CounterpointContext(
-    10, // targetMeasures
+    16, // targetMeasures
     {
         measureLength: new Rational(4)
     }
 );
 
 ctx.harmonyRules = [
-    Rules.enforceFunctionalProgressionMajor,
+    // Rules.enforceFunctionalProgressionMajor,
+    Rules.enforceRootProgression([
+        StandardHeptatonic.Interval.parse('P4')!,
+        StandardHeptatonic.Interval.parse('P5')!,
+        StandardHeptatonic.Interval.parse('m2')!,
+    ], [Chords.major, Chords.major6, Chords.minor, Chords.minor6, Chords.dim, Chords.dim6]),
     Rules.enforceValidChords,
-    // Rules.enforceChordProgression([
-    //     ...repeat(14, () => undefined),
-    //     [
-    //         Chords.major.withRoot(StandardHeptatonic.PitchClasses.g),
-    //         Chords.major6.withRoot(StandardHeptatonic.PitchClasses.g),
-    //         Chords.dim.withRoot(StandardHeptatonic.PitchClasses.b),
-    //         Chords.dim6.withRoot(StandardHeptatonic.PitchClasses.b),
-    //     ],
-    //     [
-    //         Chords.major.withRoot(StandardHeptatonic.PitchClasses.c)
-    //     ]
-    // ])
 ];
 
 ctx.localRules = [
     Rules.limitConsecutiveLeaps,
-    Rules.forbidPerfectsBySimilarMotion,
+    Rules.forbidPefectsBySimilarMotion,
     Rules.forbidNearbyPerfects,
     Rules.prioritizeVoiceMotion,
     Rules.enforceVerticalConsonanceWithMovingLocal,
@@ -40,7 +33,7 @@ ctx.localRules = [
 
 ctx.candidateRulesBefore = [
     Rules.enforceScaleTones,
-    Rules.enforceDirectionalDegreeMatrix(Rules.DegreeMatrixPreset.major),
+    // Rules.enforceDirectionalDegreeMatrix(Rules.DegreeMatrixPreset.major),
     // Rules.enforceMinor(StandardHeptatonic.PitchClasses.c),
     Rules.enforceStepwiseAroundShortNotes,
     Rules.enforcePassingTones,
@@ -52,8 +45,8 @@ ctx.candidateRulesBefore = [
 
 ctx.candidateRulesAfter = [
     Rules.enforceMelodyIntervals,
-    Rules.enforceLeapPreparationBefore,
-    Rules.enforceLeapPreparationAfter,
+    Rules.enforceLeapPreparation,
+    Rules.enforceLeapResolution,
 ];
 
 ctx.harmonicToneRules = [
@@ -73,8 +66,6 @@ ctx.nonHarmonicToneRules = {
 };
 
 ctx.allowUnison = false;
-// ctx.similarMotionCost = 0;
-// ctx.obliqueMotionCost = 0;
 
 const score = new CounterpointScoreBuilder(ctx)
     // .cantus(Clef.Treble, [
@@ -91,17 +82,18 @@ const score = new CounterpointScoreBuilder(ctx)
     //     parseNotes(['b4', ctx.parameters.measureLength]),
     //     parseNotes(['c5', ctx.parameters.measureLength]),
     // ])
-    // .soprano(defineImitation({
-    //     forbidRepeatedNotes: false,
-    //     maxConsecutiveLeaps: Infinity,
-    //     maxIgnorable3rdLeaps: Infinity,
-    //     maxUnidirectionalConsecutiveLeaps: Infinity,
-    //     maxUnidirectionalIgnorable3rdLeaps: Infinity
-    // }, 1, 1, (p) => [
-    //     p.add(StandardHeptatonic.Interval.parse('P5')!),
-    //     p.add(StandardHeptatonic.Interval.parse('d5')!),
-    // ]))
-    // .alto(Species3)
+    .soprano(Species5)
+    .alto(defineImitation({
+        forbidRepeatedNotes: false,
+        maxConsecutiveLeaps: Infinity,
+        maxIgnorable3rdLeaps: Infinity,
+        maxUnidirectionalConsecutiveLeaps: Infinity,
+        maxUnidirectionalIgnorable3rdLeaps: Infinity
+    }, 0, 2, (p) => [
+        p.add(StandardHeptatonic.Interval.parse('-P5')!),
+        p.add(StandardHeptatonic.Interval.parse('-d5')!),
+    ]))
+    // .alto(Species5)
     // .bass(defineImitation({
     //     forbidRepeatedNotes: false,
     //     maxConsecutiveLeaps: Infinity,
@@ -111,10 +103,8 @@ const score = new CounterpointScoreBuilder(ctx)
     // }, 1, 3, (p) => [
     //     p.add(StandardHeptatonic.Interval.parse('-P8')!),
     // ]))
-    .soprano(Species5)
-    .alto(Species5)
+    // .tenor(Species5)
     .bass(Species1)
-    // .bass(Species1)
     // .cantus(Clef.Bass, [
     //     parseNotes(['c3', ctx.parameters.measureLength]),
     //     parseNotes(['d3', ctx.parameters.measureLength]),
@@ -178,7 +168,7 @@ solver.reportInterval = 2000;
 
 const result = solver.aStar(score, {
     type: 'constant',
-    value: 50,
+    value: 100,
 });
 
 console.log(result?.toString());
@@ -188,7 +178,7 @@ const graph = new DirectedGraph();
 
 type Node = d3.HierarchyNode<[INode, INode | undefined]>;
 
-if (false) {
+if (result && solver.parents!.size < 10000) {
     function addNode(n: Node, size?: number, x?: number, y?: number) {
         if (!n.id) return;
         const node = n.data[0];

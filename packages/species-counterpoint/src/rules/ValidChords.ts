@@ -5,7 +5,7 @@ import { H, P } from "../Internal";
 
 const permittedChords = [Chords.major, Chords.major6, Chords.minor, Chords.minor6, Chords.dim6];
 
-export const enforceChordProgression: (progression: (Chord[] | undefined)[]) => HarmonyRule =
+export const enforceFixedProgression: (progression: (Chord[] | undefined)[]) => HarmonyRule =
     (prog) => (_ctx, s, cur, c) =>
 {
     Debug.assert(!!c);
