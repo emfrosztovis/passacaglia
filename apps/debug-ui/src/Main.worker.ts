@@ -162,13 +162,13 @@ solver.onProgress = (p) => {
 }
 
 // solver.limitSteps = 500;
-solver.removeOld = 6;
-solver.batch = 50;
+solver.removeOld = 4;
+solver.batch = 25;
 solver.reportInterval = 2000;
 
 const result = solver.aStar(score, {
     type: 'constant',
-    value: 100,
+    value: 50,
 });
 
 console.log(result?.toString());
